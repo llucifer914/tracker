@@ -8,7 +8,6 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="股票記帳">
-<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAACjUlEQVR4nO3dsW3cMABA0XMQwPASHsBVSmeFLOKZvEhWSJttDHcuDAQu8g1IR1N34Hs9SQH6otTw7ub+4fEE//Pt6AvgcomDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIImDJA7S96MvYEXPd7dbhzy9vH7FlXxOHFPtyOLjwMmJeK3Ms7uMgTNsIo5JRt3XmX2IgySOGcY+7tM2D3GQxEESB0kcJHGQxEESB0kcJHGQxEESB0kcJHGQxEESB0kcJHGQxEESB0kcJHGQxEESB0kcJHGQxEESB0kcJHGQxEESB0kcJHGQxEESB0kcpHlxjP1x2a2zHbv608vrwNXHzvYJOwdpahyjHt998xy7+qjHfdq2cZq/c5x/h86Z4djVz7+vM8s4nU439w+PM9f759h/TTh29ee7261DJmfx7rA4uHw+SEniIImDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIL0BpbhZNXUth5cAAAAASUVORK5CYII=">
 <title>股票交易記帳本</title>
 <style>
   * { box-sizing: border-box; }
@@ -411,12 +410,12 @@
       <div class="summary-value" id="summaryHolding">0</div>
     </div>
     <div class="summary-item">
-      <div class="summary-label">已實現損益</div>
+      <div class="summary-label">賣出損益</div>
       <div class="summary-value" id="summaryPnl">--</div>
     </div>
     <div class="summary-item">
-      <div class="summary-label">勝率</div>
-      <div class="summary-value" id="summaryWinRate">--</div>
+      <div class="summary-label">持有成本</div>
+      <div class="summary-value" id="summaryHoldingCost">--</div>
     </div>
   </section>
 
@@ -424,7 +423,7 @@
     <div class="filter-tabs">
       <button class="filter-tab active" data-filter="all">全部</button>
       <button class="filter-tab" data-filter="holding">持有中</button>
-      <button class="filter-tab" data-filter="realized">已實現</button>
+      <button class="filter-tab" data-filter="realized">賣出</button>
     </div>
     <div class="toolbar-actions">
       <button id="exportBtn" class="btn-link">匯出 CSV</button>
@@ -641,16 +640,20 @@
   function renderSummary() {
     const totalCount = trades.length;
     const realizedTrades = trades.filter(isSoldTrade);
-    const holdingCount = totalCount - realizedTrades.length;
+    const holdingTrades = trades.filter(function(t) { return !isSoldTrade(t); });
+    const holdingCount = holdingTrades.length;
 
     let totalPnl = 0;
-    let winCount = 0;
     realizedTrades.forEach(function(t) {
       const m = calcMetrics(t);
       totalPnl += m.pnlTWD;
-      if (m.pnlTWD > 0) winCount++;
     });
-    const winRate = realizedTrades.length > 0 ? (winCount / realizedTrades.length * 100) : null;
+
+    let holdingCost = 0;
+    holdingTrades.forEach(function(t) {
+      const m = calcMetrics(t);
+      holdingCost += m.buyCostTWD;
+    });
 
     document.getElementById('summaryTotal').textContent = totalCount;
     document.getElementById('summaryHolding').textContent = holdingCount;
@@ -659,7 +662,7 @@
     pnlEl.textContent = realizedTrades.length > 0 ? formatSigned(totalPnl) : '--';
     pnlEl.className = 'summary-value' + (totalPnl > 0 ? ' gain' : totalPnl < 0 ? ' loss' : '');
 
-    document.getElementById('summaryWinRate').textContent = winRate === null ? '--' : winRate.toFixed(0) + '%';
+    document.getElementById('summaryHoldingCost').textContent = holdingCount > 0 ? formatTWD(holdingCost) : '--';
   }
 
   function renderList() {
@@ -713,7 +716,7 @@
     return '<div class="entry">' +
       '<div class="entry-header">' +
         '<div class="entry-title"><span class="stock-name">' + escapeHtml(t.stockName) + '</span><span class="ticker">' + escapeHtml(t.ticker) + '</span></div>' +
-        '<span class="status-tag"><span class="status-dot ' + (sold ? 'realized' : 'holding') + '"></span>' + (sold ? '已實現' : '持有中') + '</span>' +
+        '<span class="status-tag"><span class="status-dot ' + (sold ? 'realized' : 'holding') + '"></span>' + (sold ? '賣出' : '持有中') + '</span>' +
       '</div>' +
       '<div class="entry-line"><span class="entry-tag">買入</span>' +
         '<span class="num">' + formatDate(t.buyDateTime) + '</span>' +
