@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#EEF1EE">
+<meta name="theme-color" content="#0B0F14">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="股票記帳">
 <title>股票交易記帳本</title>
 <style>
@@ -14,15 +14,17 @@
   html, body { margin: 0; padding: 0; }
 
   :root {
-    --ink: #1E2A38;
-    --ink-soft: rgba(30,42,56,0.60);
-    --ink-faint: rgba(30,42,56,0.38);
-    --paper: #EEF1EE;
-    --panel: #FFFFFF;
-    --rule: #DBE0DB;
-    --rule-strong: #C2C9C2;
-    --gain: #B7333F;
-    --loss: #29714B;
+    --ink: #E9ECF1;
+    --ink-soft: rgba(233,236,241,0.58);
+    --ink-faint: rgba(233,236,241,0.36);
+    --paper: #0B0F14;
+    --panel: #131922;
+    --rule: #232B36;
+    --rule-strong: #313B47;
+    --gain: #F5464F;
+    --loss: #2ED47A;
+    --accent: #33BFF0;
+    --accent-ink: #04202B;
     --radius-lg: 12px;
     --radius-md: 8px;
     --radius-sm: 7px;
@@ -80,8 +82,8 @@
     margin: 0;
   }
   .btn-primary {
-    background: var(--ink);
-    color: var(--panel);
+    background: var(--accent);
+    color: var(--accent-ink);
     border: none;
     padding: 12px 20px;
     border-radius: var(--radius-sm);
@@ -95,42 +97,78 @@
   .btn-primary:hover { opacity: 0.85; }
   .btn-primary:active { opacity: 0.7; }
 
-  /* ---------- Summary strip ---------- */
-  .summary-strip {
+  /* ---------- Summary hero (return ring + metrics) ---------- */
+  .summary-hero {
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
+    gap: 22px;
     background: var(--panel);
     border: 1px solid var(--rule-strong);
     border-radius: var(--radius-lg);
     margin-bottom: 18px;
-    overflow: hidden;
+    padding: 18px 20px;
+    flex-wrap: wrap;
   }
-  .summary-item {
-    flex: 1 1 25%;
-    min-width: 130px;
-    padding: 14px 18px;
-    border-right: 1px solid var(--rule);
+  .ring-wrap {
+    position: relative;
+    width: 112px;
+    height: 112px;
+    flex-shrink: 0;
   }
-  .summary-item:last-child { border-right: none; }
-  .summary-label {
-    font-size: 12px;
-    color: var(--ink-soft);
-    margin-bottom: 6px;
+  .ring-svg { width: 100%; height: 100%; }
+  .ring-svg circle { transition: stroke-dashoffset 0.3s, stroke 0.3s; }
+  .ring-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
   }
-  .summary-value {
-    font-size: 19px;
+  .ring-value {
+    font-size: 18px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     color: var(--ink);
   }
-  .summary-value.gain { color: var(--gain); }
-  .summary-value.loss { color: var(--loss); }
-
-  @media (max-width: 620px) {
-    .summary-item { flex: 1 1 50%; border-bottom: 1px solid transparent; }
-    .summary-item:nth-child(2n) { border-right: none; }
-    .summary-item:nth-child(-n+2) { border-bottom: 1px solid var(--rule); }
+  .ring-label {
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    margin-top: 3px;
+    line-height: 1.3;
   }
+  .hero-metrics {
+    flex: 1;
+    min-width: 190px;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+  .hero-metric {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 13.5px;
+  }
+  .hero-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .hero-dot.dot-accent { background: var(--accent); }
+  .hero-dot.dot-neutral { background: var(--ink-faint); }
+  .hero-dot.gain { background: var(--gain); }
+  .hero-dot.loss { background: var(--loss); }
+  .hero-metric-label { color: var(--ink-soft); flex: 1; }
+  .hero-metric-value {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+  .hero-metric-value.gain { color: var(--gain); }
+  .hero-metric-value.loss { color: var(--loss); }
 
   /* ---------- Toolbar ---------- */
   .toolbar {
@@ -141,7 +179,13 @@
     gap: 10px;
     margin-bottom: 14px;
   }
-  .filter-tabs {
+  .toolbar-left {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .filter-tabs, .view-toggle {
     display: flex;
     gap: 3px;
     background: var(--panel);
@@ -149,7 +193,7 @@
     border-radius: var(--radius-sm);
     padding: 3px;
   }
-  .filter-tab {
+  .filter-tab, .view-tab {
     border: none;
     background: transparent;
     padding: 9px 15px;
@@ -160,7 +204,7 @@
     font-weight: 500;
     min-height: 40px;
   }
-  .filter-tab.active { background: var(--ink); color: var(--panel); }
+  .filter-tab.active, .view-tab.active { background: var(--accent); color: var(--accent-ink); }
   .toolbar-actions { display: flex; gap: 18px; }
   .btn-link {
     background: none;
@@ -189,7 +233,7 @@
     transition: background-color 0.12s;
   }
   .ledger .entry:last-child { border-bottom: none; }
-  .entry:hover { background-color: rgba(30,42,56,0.015); }
+  .entry:hover { background-color: rgba(255,255,255,0.025); }
 
   .entry-header {
     display: flex;
@@ -285,10 +329,46 @@
     font-size: 14px;
   }
 
+  .table-wrap {
+    background: var(--panel);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius-lg);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .trade-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .trade-table th {
+    text-align: left;
+    padding: 11px 14px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--rule-strong);
+    white-space: nowrap;
+  }
+  .trade-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .trade-table tbody tr { cursor: pointer; }
+  .trade-table tbody tr:last-child td { border-bottom: none; }
+  .trade-table tbody tr:active { background: rgba(255,255,255,0.04); }
+  .trade-table th.num-cell, .trade-table td.num-cell { text-align: right; }
+  .trade-table td.gain { color: var(--gain); font-weight: 600; }
+  .trade-table td.loss { color: var(--loss); font-weight: 600; }
+  .trade-table .cell-ticker { font-weight: 700; }
+  .trade-table .cell-name { color: var(--ink-soft); font-weight: 400; font-size: 12px; display: block; }
+
   .storage-warning {
     background: var(--panel);
     border: 1px solid var(--rule-strong);
-    border-left: 3px solid #B7862F;
+    border-left: 3px solid #E0A83E;
     border-radius: var(--radius-md);
     padding: 11px 14px;
     font-size: 13px;
@@ -300,7 +380,7 @@
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(20,26,33,0.42);
+    background: rgba(0,0,0,0.62);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -309,13 +389,14 @@
   }
   .modal {
     background: var(--panel);
+    border: 1px solid var(--rule-strong);
     border-radius: 14px;
     padding: 22px;
     width: 100%;
     max-width: 460px;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 18px 48px rgba(20,26,33,0.22);
+    box-shadow: 0 18px 48px rgba(0,0,0,0.45);
   }
   .modal h2 { font-size: 17px; margin: 0 0 16px; color: var(--ink); }
 
@@ -400,30 +481,52 @@
     <button id="addBtn" class="btn-primary">+ 新增交易</button>
   </header>
 
-  <section class="summary-strip">
-    <div class="summary-item">
-      <div class="summary-label">總筆數</div>
-      <div class="summary-value" id="summaryTotal">0</div>
+  <section class="summary-hero">
+    <div class="ring-wrap">
+      <svg class="ring-svg" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="50" fill="none" stroke="var(--rule)" stroke-width="11"/>
+        <circle cx="60" cy="60" r="50" fill="none" id="ringFill" stroke="var(--rule-strong)" stroke-width="11" stroke-linecap="round" transform="rotate(-90 60 60)"/>
+      </svg>
+      <div class="ring-center">
+        <div class="ring-value" id="ringValue">--</div>
+        <div class="ring-label">已實現<br>報酬率</div>
+      </div>
     </div>
-    <div class="summary-item">
-      <div class="summary-label">持有中</div>
-      <div class="summary-value" id="summaryHolding">0</div>
-    </div>
-    <div class="summary-item">
-      <div class="summary-label">賣出損益</div>
-      <div class="summary-value" id="summaryPnl">--</div>
-    </div>
-    <div class="summary-item">
-      <div class="summary-label">持有成本</div>
-      <div class="summary-value" id="summaryHoldingCost">--</div>
+    <div class="hero-metrics">
+      <div class="hero-metric">
+        <span class="hero-dot dot-neutral" id="pnlDot"></span>
+        <span class="hero-metric-label">賣出損益</span>
+        <span class="hero-metric-value" id="summaryPnl">--</span>
+      </div>
+      <div class="hero-metric">
+        <span class="hero-dot dot-accent"></span>
+        <span class="hero-metric-label">持有成本</span>
+        <span class="hero-metric-value" id="summaryHoldingCost">--</span>
+      </div>
+      <div class="hero-metric">
+        <span class="hero-dot dot-neutral"></span>
+        <span class="hero-metric-label">總筆數</span>
+        <span class="hero-metric-value" id="summaryTotal">0</span>
+      </div>
+      <div class="hero-metric">
+        <span class="hero-dot dot-neutral"></span>
+        <span class="hero-metric-label">持有中</span>
+        <span class="hero-metric-value" id="summaryHolding">0</span>
+      </div>
     </div>
   </section>
 
   <div class="toolbar">
-    <div class="filter-tabs">
-      <button class="filter-tab active" data-filter="all">全部</button>
-      <button class="filter-tab" data-filter="holding">持有中</button>
-      <button class="filter-tab" data-filter="realized">賣出</button>
+    <div class="toolbar-left">
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all">全部</button>
+        <button class="filter-tab" data-filter="holding">持有中</button>
+        <button class="filter-tab" data-filter="realized">賣出</button>
+      </div>
+      <div class="view-toggle">
+        <button class="view-tab active" data-view="card">明細</button>
+        <button class="view-tab" data-view="table">總覽</button>
+      </div>
     </div>
     <div class="toolbar-actions">
       <button id="exportBtn" class="btn-link">匯出 CSV</button>
@@ -433,6 +536,20 @@
 
   <div class="ledger" id="ledgerPanel">
     <div id="tradeList"></div>
+  </div>
+  <div class="table-wrap" id="tableWrap" style="display:none">
+    <table class="trade-table">
+      <thead>
+        <tr>
+          <th>股票</th>
+          <th>買入日期</th>
+          <th>狀態</th>
+          <th class="num-cell">損益</th>
+          <th class="num-cell">報酬率</th>
+        </tr>
+      </thead>
+      <tbody id="tradeTableBody"></tbody>
+    </table>
   </div>
   <div id="emptyState" class="empty-state" style="display:none"></div>
 </div>
@@ -508,6 +625,7 @@
 <script>
   let trades = [];
   let currentFilter = 'all';
+  let currentView = 'card';
   let editingId = null;
 
   /* ---------- helpers ---------- */
@@ -644,10 +762,13 @@
     const holdingCount = holdingTrades.length;
 
     let totalPnl = 0;
+    let realizedCostSum = 0;
     realizedTrades.forEach(function(t) {
       const m = calcMetrics(t);
       totalPnl += m.pnlTWD;
+      realizedCostSum += m.buyCostTWD;
     });
+    const overallReturnPct = (realizedTrades.length > 0 && realizedCostSum !== 0) ? (totalPnl / realizedCostSum) * 100 : null;
 
     let holdingCost = 0;
     holdingTrades.forEach(function(t) {
@@ -659,10 +780,41 @@
     document.getElementById('summaryHolding').textContent = holdingCount;
 
     const pnlEl = document.getElementById('summaryPnl');
+    const pnlDot = document.getElementById('pnlDot');
+    const pnlClass = totalPnl > 0 ? 'gain' : totalPnl < 0 ? 'loss' : '';
     pnlEl.textContent = realizedTrades.length > 0 ? formatSigned(totalPnl) : '--';
-    pnlEl.className = 'summary-value' + (totalPnl > 0 ? ' gain' : totalPnl < 0 ? ' loss' : '');
+    pnlEl.className = 'hero-metric-value' + (pnlClass ? ' ' + pnlClass : '');
+    pnlDot.className = 'hero-dot' + (pnlClass ? ' ' + pnlClass : ' dot-neutral');
 
     document.getElementById('summaryHoldingCost').textContent = holdingCount > 0 ? formatTWD(holdingCost) : '--';
+
+    updateReturnRing(overallReturnPct);
+  }
+
+  function updateReturnRing(returnPct) {
+    const ring = document.getElementById('ringFill');
+    const valueEl = document.getElementById('ringValue');
+    const r = 50;
+    const circumference = 2 * Math.PI * r;
+    ring.setAttribute('stroke-dasharray', circumference.toFixed(2));
+
+    if (returnPct === null) {
+      ring.setAttribute('stroke-dashoffset', circumference.toFixed(2));
+      ring.style.stroke = 'var(--rule-strong)';
+      valueEl.style.color = 'var(--ink-soft)';
+      valueEl.textContent = '--';
+      return;
+    }
+
+    const clamped = Math.max(-50, Math.min(50, returnPct));
+    const ratio = Math.max(Math.abs(clamped) / 50, returnPct === 0 ? 0 : 0.03);
+    const offset = circumference * (1 - ratio);
+    ring.setAttribute('stroke-dashoffset', offset.toFixed(2));
+
+    const color = returnPct > 0 ? 'var(--gain)' : returnPct < 0 ? 'var(--loss)' : 'var(--ink-faint)';
+    ring.style.stroke = color;
+    valueEl.style.color = returnPct === 0 ? 'var(--ink)' : color;
+    valueEl.textContent = formatSignedPct(returnPct);
   }
 
   function renderList() {
@@ -675,10 +827,13 @@
     const listEl = document.getElementById('tradeList');
     const emptyEl = document.getElementById('emptyState');
     const panelEl = document.getElementById('ledgerPanel');
+    const tableWrapEl = document.getElementById('tableWrap');
 
     if (filtered.length === 0) {
       listEl.innerHTML = '';
+      document.getElementById('tradeTableBody').innerHTML = '';
       panelEl.style.display = 'none';
+      tableWrapEl.style.display = 'none';
       emptyEl.style.display = 'block';
       emptyEl.textContent = trades.length === 0
         ? '尚無交易紀錄，點擊「+ 新增交易」開始記錄第一筆買賣'
@@ -686,8 +841,34 @@
       return;
     }
     emptyEl.style.display = 'none';
-    panelEl.style.display = '';
-    listEl.innerHTML = filtered.map(renderCard).join('');
+
+    if (currentView === 'table') {
+      panelEl.style.display = 'none';
+      tableWrapEl.style.display = '';
+      renderTable(filtered);
+    } else {
+      tableWrapEl.style.display = 'none';
+      panelEl.style.display = '';
+      listEl.innerHTML = filtered.map(renderCard).join('');
+    }
+  }
+
+  function renderTable(filtered) {
+    const tbody = document.getElementById('tradeTableBody');
+    tbody.innerHTML = filtered.map(renderTableRow).join('');
+  }
+
+  function renderTableRow(t) {
+    const m = calcMetrics(t);
+    const sold = m.isSold;
+    const pnlClass = sold ? (m.pnlTWD > 0 ? 'gain' : m.pnlTWD < 0 ? 'loss' : '') : '';
+    return '<tr onclick="openEdit(\'' + t.id + '\')">' +
+      '<td><span class="cell-ticker">' + escapeHtml(t.ticker) + '</span><span class="cell-name">' + escapeHtml(t.stockName) + '</span></td>' +
+      '<td>' + formatDate(t.buyDateTime) + '</td>' +
+      '<td>' + (sold ? '賣出' : '持有中') + '</td>' +
+      '<td class="num-cell ' + pnlClass + '">' + (sold ? formatSigned(m.pnlTWD) : '--') + '</td>' +
+      '<td class="num-cell ' + pnlClass + '">' + (sold ? formatSignedPct(m.returnPct) : '--') + '</td>' +
+    '</tr>';
   }
 
   function renderCard(t) {
@@ -825,6 +1006,15 @@
       Array.prototype.forEach.call(document.querySelectorAll('.filter-tab'), function(b) { b.classList.remove('active'); });
       btn.classList.add('active');
       currentFilter = btn.dataset.filter;
+      renderList();
+    });
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.view-tab'), function(btn) {
+    btn.addEventListener('click', function() {
+      Array.prototype.forEach.call(document.querySelectorAll('.view-tab'), function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentView = btn.dataset.view;
       renderList();
     });
   });
