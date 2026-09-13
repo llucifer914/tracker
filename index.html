@@ -171,6 +171,19 @@
   .hero-metric-value.loss { color: var(--loss); }
 
   /* ---------- Toolbar ---------- */
+  .search-input {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius-sm);
+    padding: 11px 13px;
+    font-size: 16px;
+    margin-bottom: 14px;
+    background: var(--panel);
+    color: var(--ink);
+  }
+  .search-input::placeholder { color: var(--ink-faint); }
   .toolbar {
     display: flex;
     justify-content: space-between;
@@ -364,6 +377,11 @@
   .trade-table td.loss { color: var(--loss); font-weight: 600; }
   .trade-table .cell-ticker { font-weight: 700; }
   .trade-table .cell-name { color: var(--ink-soft); font-weight: 400; font-size: 12px; display: block; }
+  .trade-table th:first-child, .trade-table td:first-child {
+    position: sticky;
+    left: 0;
+    background: var(--panel);
+  }
 
   .storage-warning {
     background: var(--panel);
@@ -440,9 +458,12 @@
   .modal-actions {
     display: flex;
     justify-content: flex-end;
+    flex-wrap: wrap;
     gap: 10px;
     margin-top: 6px;
   }
+  .modal-actions .btn-primary, .modal-actions .btn-secondary { flex: 1 1 auto; }
+  #cancelBtn { flex-grow: 0; }
   .btn-secondary {
     background: var(--panel);
     border: 1px solid var(--rule-strong);
@@ -516,6 +537,8 @@
     </div>
   </section>
 
+  <input type="search" id="searchInput" class="search-input" placeholder="搜尋股票名稱或代號" autocomplete="off">
+
   <div class="toolbar">
     <div class="toolbar-left">
       <div class="filter-tabs">
@@ -540,7 +563,7 @@
   <div class="table-wrap" id="tableWrap" style="display:none">
     <table class="trade-table">
       <thead>
-        <tr>
+        <tr id="tableHeadRow">
           <th>股票</th>
           <th>買入日期</th>
           <th>狀態</th>
@@ -562,10 +585,12 @@
         <legend>買入資訊</legend>
 
         <label class="field-label">股票名稱</label>
-        <input name="stockName" required placeholder="例：台積電 ADR">
+        <input name="stockName" required placeholder="例：台積電 ADR" list="stockNameList" autocomplete="off">
 
         <label class="field-label">股票代號</label>
-        <input name="ticker" required placeholder="例：TSM">
+        <input name="ticker" required placeholder="例：TSM" list="tickerList" autocomplete="off">
+        <datalist id="stockNameList"></datalist>
+        <datalist id="tickerList"></datalist>
 
         <div class="form-row">
           <div>
@@ -616,6 +641,7 @@
 
       <div class="modal-actions">
         <button type="button" id="cancelBtn" class="btn-secondary">取消</button>
+        <button type="submit" id="saveAddAnotherBtn" class="btn-secondary">儲存並新增下一筆</button>
         <button type="submit" class="btn-primary">儲存</button>
       </div>
     </form>
@@ -626,6 +652,7 @@
   let trades = [];
   let currentFilter = 'all';
   let currentView = 'card';
+  let searchQuery = '';
   let editingId = null;
 
   /* ---------- helpers ---------- */
@@ -753,6 +780,41 @@
   function render() {
     renderSummary();
     renderList();
+    updateAutocomplete();
+  }
+
+  function updateAutocomplete() {
+    const names = [];
+    const tickers = [];
+    trades.forEach(function(t) {
+      if (t.stockName && names.indexOf(t.stockName) === -1) names.push(t.stockName);
+      if (t.ticker && tickers.indexOf(t.ticker) === -1) tickers.push(t.ticker);
+    });
+    document.getElementById('stockNameList').innerHTML = names.map(function(n) {
+      return '<option value="' + escapeHtml(n) + '"></option>';
+    }).join('');
+    document.getElementById('tickerList').innerHTML = tickers.map(function(t) {
+      return '<option value="' + escapeHtml(t) + '"></option>';
+    }).join('');
+  }
+
+  function todayDateStr() {
+    const d = new Date();
+    const pad = function(n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+
+  function getLastUsedDefaults() {
+    if (trades.length === 0) return { currency: 'USD', buyFxRate: '' };
+    const last = trades[trades.length - 1];
+    return { currency: last.currency || 'USD', buyFxRate: last.buyFxRate != null ? last.buyFxRate : '' };
+  }
+
+  function applyNewTradeDefaults() {
+    const defaults = getLastUsedDefaults();
+    document.querySelector('[name="currency"]').value = defaults.currency;
+    if (defaults.buyFxRate !== '') document.querySelector('[name="buyFxRate"]').value = defaults.buyFxRate;
+    document.querySelector('[name="buyDateTime"]').value = todayDateStr();
   }
 
   function renderSummary() {
@@ -819,8 +881,15 @@
 
   function renderList() {
     let filtered = trades;
-    if (currentFilter === 'holding') filtered = trades.filter(function(t) { return !isSoldTrade(t); });
-    if (currentFilter === 'realized') filtered = trades.filter(isSoldTrade);
+    if (currentFilter === 'holding') filtered = filtered.filter(function(t) { return !isSoldTrade(t); });
+    else if (currentFilter === 'realized') filtered = filtered.filter(isSoldTrade);
+    if (searchQuery) {
+      filtered = filtered.filter(function(t) {
+        const name = (t.stockName || '').toLowerCase();
+        const ticker = (t.ticker || '').toLowerCase();
+        return name.indexOf(searchQuery) !== -1 || ticker.indexOf(searchQuery) !== -1;
+      });
+    }
 
     filtered = filtered.slice().sort(function(a, b) { return new Date(b.buyDateTime) - new Date(a.buyDateTime); });
 
@@ -837,7 +906,7 @@
       emptyEl.style.display = 'block';
       emptyEl.textContent = trades.length === 0
         ? '尚無交易紀錄，點擊「+ 新增交易」開始記錄第一筆買賣'
-        : '這個篩選條件下沒有紀錄';
+        : (searchQuery ? '沒有符合搜尋的紀錄' : '這個篩選條件下沒有紀錄');
       return;
     }
     emptyEl.style.display = 'none';
@@ -854,20 +923,60 @@
   }
 
   function renderTable(filtered) {
+    const theadRow = document.getElementById('tableHeadRow');
     const tbody = document.getElementById('tradeTableBody');
-    tbody.innerHTML = filtered.map(renderTableRow).join('');
+
+    if (currentFilter === 'holding') {
+      theadRow.innerHTML = '<th>股票</th><th>買入日期</th><th class="num-cell">匯率</th><th class="num-cell">持有成本</th>';
+      tbody.innerHTML = filtered.map(renderTableRowHolding).join('');
+    } else if (currentFilter === 'realized') {
+      theadRow.innerHTML = '<th>股票</th><th>買入日期</th><th class="num-cell">買入匯率</th><th class="num-cell">賣出匯率</th><th class="num-cell">買入成本</th><th class="num-cell">賣出成本</th><th class="num-cell">損益</th><th class="num-cell">報酬率</th>';
+      tbody.innerHTML = filtered.map(renderTableRowRealized).join('');
+    } else {
+      theadRow.innerHTML = '<th>股票</th><th>買入日期</th><th>狀態</th><th class="num-cell">損益</th><th class="num-cell">報酬率</th>';
+      tbody.innerHTML = filtered.map(renderTableRowAll).join('');
+    }
   }
 
-  function renderTableRow(t) {
+  function tickerCell(t) {
+    return '<td><span class="cell-ticker">' + escapeHtml(t.ticker) + '</span><span class="cell-name">' + escapeHtml(t.stockName) + '</span></td>';
+  }
+
+  function renderTableRowAll(t) {
     const m = calcMetrics(t);
     const sold = m.isSold;
     const pnlClass = sold ? (m.pnlTWD > 0 ? 'gain' : m.pnlTWD < 0 ? 'loss' : '') : '';
     return '<tr onclick="openEdit(\'' + t.id + '\')">' +
-      '<td><span class="cell-ticker">' + escapeHtml(t.ticker) + '</span><span class="cell-name">' + escapeHtml(t.stockName) + '</span></td>' +
+      tickerCell(t) +
       '<td>' + formatDate(t.buyDateTime) + '</td>' +
       '<td>' + (sold ? '賣出' : '持有中') + '</td>' +
       '<td class="num-cell ' + pnlClass + '">' + (sold ? formatSigned(m.pnlTWD) : '--') + '</td>' +
       '<td class="num-cell ' + pnlClass + '">' + (sold ? formatSignedPct(m.returnPct) : '--') + '</td>' +
+    '</tr>';
+  }
+
+  function renderTableRowHolding(t) {
+    const m = calcMetrics(t);
+    return '<tr onclick="openEdit(\'' + t.id + '\')">' +
+      tickerCell(t) +
+      '<td>' + formatDate(t.buyDateTime) + '</td>' +
+      '<td class="num-cell">' + formatNum(t.buyFxRate, 4) + '</td>' +
+      '<td class="num-cell">' + formatTWD(m.buyCostTWD) + '</td>' +
+    '</tr>';
+  }
+
+  function renderTableRowRealized(t) {
+    const m = calcMetrics(t);
+    const pnlClass = m.pnlTWD > 0 ? 'gain' : m.pnlTWD < 0 ? 'loss' : '';
+    return '<tr onclick="openEdit(\'' + t.id + '\')">' +
+      tickerCell(t) +
+      '<td>' + formatDate(t.buyDateTime) + '</td>' +
+      '<td class="num-cell">' + formatNum(t.buyFxRate, 4) + '</td>' +
+      '<td class="num-cell">' + formatNum(t.sellFxRate, 4) + '</td>' +
+      '<td class="num-cell">' + formatTWD(m.buyCostTWD) + '</td>' +
+      '<td class="num-cell">' + formatTWD(m.sellAmountTWD) + '</td>' +
+      '<td class="num-cell ' + pnlClass + '">' + formatSigned(m.pnlTWD) + '</td>' +
+      '<td class="num-cell ' + pnlClass + '">' + formatSignedPct(m.returnPct) + '</td>' +
     '</tr>';
   }
 
@@ -989,7 +1098,7 @@
     editingId = null;
     document.getElementById('modalTitle').textContent = '新增交易';
     document.getElementById('tradeForm').reset();
-    document.querySelector('[name="currency"]').value = 'USD';
+    applyNewTradeDefaults();
     openModal();
   });
 
@@ -1022,6 +1131,7 @@
   document.getElementById('tradeForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const fd = new FormData(e.target);
+    const continueAdding = e.submitter && e.submitter.id === 'saveAddAnotherBtn';
 
     const sellFieldsRaw = [fd.get('sellDateTime'), fd.get('sellPrice'), fd.get('sellFxRate')];
     const sellFieldsProvided = sellFieldsRaw.filter(function(v) { return v !== null && v !== ''; }).length;
@@ -1058,8 +1168,22 @@
     }
 
     saveTrades();
-    closeModal();
     render();
+
+    if (continueAdding) {
+      editingId = null;
+      document.getElementById('modalTitle').textContent = '新增交易';
+      document.getElementById('tradeForm').reset();
+      applyNewTradeDefaults();
+      document.querySelector('[name="stockName"]').focus();
+    } else {
+      closeModal();
+    }
+  });
+
+  document.getElementById('searchInput').addEventListener('input', function(e) {
+    searchQuery = e.target.value.trim().toLowerCase();
+    renderList();
   });
 
   loadTrades();
