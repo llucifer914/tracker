@@ -8,15 +8,15 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="股票記帳">
-<title>股票交易記帳本</title>
+<title>股票買賣記帳本</title>
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
 
   :root {
     --ink: #E9ECF1;
-    --ink-soft: rgba(233,236,241,0.58);
-    --ink-faint: rgba(233,236,241,0.36);
+    --ink-soft: rgba(233,236,241,0.82);
+    --ink-faint: rgba(233,236,241,0.64);
     --paper: #0B0F14;
     --panel: #131922;
     --rule: #232B36;
@@ -44,6 +44,8 @@
   }
 
   button, input, textarea { font-family: inherit; }
+
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, "Cascadia Code", monospace; }
 
   button { touch-action: manipulation; }
 
@@ -82,7 +84,7 @@
     margin: 0;
   }
   .btn-primary {
-    background: var(--accent);
+    background: linear-gradient(135deg, #6BE0FB, var(--accent) 65%);
     color: var(--accent-ink);
     border: none;
     padding: 12px 20px;
@@ -94,29 +96,29 @@
     transition: opacity 0.12s;
     min-height: 44px;
   }
-  .btn-primary:hover { opacity: 0.85; }
-  .btn-primary:active { opacity: 0.7; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:active { opacity: 0.75; }
 
   /* ---------- Summary hero (return ring + metrics) ---------- */
   .summary-hero {
     display: flex;
     align-items: center;
-    gap: 22px;
+    gap: 18px;
     background: var(--panel);
     border: 1px solid var(--rule-strong);
     border-radius: var(--radius-lg);
     margin-bottom: 18px;
-    padding: 18px 20px;
+    padding: 12px 18px;
     flex-wrap: wrap;
   }
   .ring-wrap {
     position: relative;
-    width: 112px;
-    height: 112px;
+    width: 128px;
+    height: 128px;
     flex-shrink: 0;
   }
-  .ring-svg { width: 100%; height: 100%; }
-  .ring-svg circle { transition: stroke-dashoffset 0.3s, stroke 0.3s; }
+  .ring-svg { width: 100%; height: 100%; overflow: visible; }
+  .ring-svg circle { transition: stroke 0.3s; }
   .ring-center {
     position: absolute;
     inset: 0;
@@ -125,19 +127,20 @@
     align-items: center;
     justify-content: center;
     text-align: center;
+    gap: 3px;
   }
+  .ring-value-row { display: flex; align-items: center; justify-content: center; gap: 3px; }
+  .ring-direction { font-size: 12px; line-height: 1; color: var(--gain); }
+  .ring-direction.loss { color: var(--loss); }
   .ring-value {
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 750;
+    letter-spacing: -0.04em;
     font-variant-numeric: tabular-nums;
     color: var(--ink);
+    white-space: nowrap;
   }
-  .ring-label {
-    font-size: 10.5px;
-    color: var(--ink-soft);
-    margin-top: 3px;
-    line-height: 1.3;
-  }
+  .ring-label { font-size: 11px; color: var(--ink-soft); letter-spacing: 0.04em; line-height: 1.3; }
   .hero-metrics {
     flex: 1;
     min-width: 190px;
@@ -169,6 +172,30 @@
   }
   .hero-metric-value.gain { color: var(--gain); }
   .hero-metric-value.loss { color: var(--loss); }
+
+  .inventory-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 16px; margin-top:10px; padding-top:10px; border-top:1px solid var(--rule); }
+  .inventory-cell { display:flex; flex-direction:column; gap:3px; min-width:0; }
+  .inventory-cell-label { color:var(--ink-soft); font-size:11px; }
+  .inventory-cell-value { color:var(--ink); font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+  .inventory-table-wrap { width:100%; overflow-x:auto; border:1px solid var(--rule-strong); border-radius:var(--radius-md); background:var(--panel); }
+  .inventory-table { width:100%; min-width:760px; border-collapse:collapse; font-size:12px; }
+  .inventory-table th, .inventory-table td { padding:11px 13px; border-bottom:1px solid var(--rule); text-align:left; white-space:nowrap; }
+  .inventory-table th { color:var(--ink-soft); font-size:11px; font-weight:600; }
+  .inventory-table tr:last-child td { border-bottom:none; }
+  .inventory-stock-cell { display:flex; flex-direction:column; gap:2px; }
+  .inventory-stock-cell strong { color:var(--ink); font-size:12px; }
+  .inventory-stock-cell span { color:var(--ink-soft); font-size:11px; }
+  .inventory-table .num-cell { text-align:right; font-variant-numeric:tabular-nums; }
+  .sale-card-header { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:4px 12px; margin-bottom:7px; }
+  .sale-stock-identity { grid-column:1; grid-row:1; display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 9px; margin:0; }
+  .sale-stock-identity strong { color:var(--accent); font-size:12px; }
+  .sale-stock-identity span { color:var(--ink); font-size:12px; }
+  .sale-unit-price { grid-column:2; grid-row:1; }
+  .sale-event-meta { grid-column:1; grid-row:2; color:var(--ink-soft); font-size:12px; }
+  .sale-quantity { grid-column:2; grid-row:2; justify-self:end; color:var(--ink-soft); font-size:12px; white-space:nowrap; }
+  .sale-quantity strong { color:var(--ink); font-size:14px; font-variant-numeric:tabular-nums; }
+  @media (max-width:480px) { .inventory-table { min-width:730px; } }
+
 
   /* ---------- Toolbar ---------- */
   .search-input {
@@ -217,8 +244,11 @@
     font-weight: 500;
     min-height: 40px;
   }
-  .filter-tab.active, .view-tab.active { background: var(--accent); color: var(--accent-ink); }
-  .toolbar-actions { display: flex; gap: 18px; }
+  .filter-tab.active, .view-tab.active {
+    background: linear-gradient(135deg, #6BE0FB, var(--accent) 65%);
+    color: var(--accent-ink);
+  }
+  .toolbar-actions { display: flex; flex-wrap: wrap; gap: 8px 14px; }
   .btn-link {
     background: none;
     border: none;
@@ -275,7 +305,7 @@
     flex-shrink: 0;
   }
   .status-dot.realized { background: var(--ink); border-color: var(--ink); }
-  .status-dot.holding { background: transparent; }
+  .status-dot.holding { background: var(--accent); border-color: var(--accent); }
 
   .entry-line {
     display: flex;
@@ -328,11 +358,81 @@
   .effect-row .gain { color: var(--gain); }
   .effect-row .loss { color: var(--loss); }
 
+  .header-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .event-type-switch { display:flex; gap:8px; margin:0 0 14px; }
+  .event-type-switch label { display:flex; align-items:center; gap:6px; padding:9px 13px; border:1px solid var(--rule-strong); border-radius:7px; color:var(--ink-soft); cursor:pointer; }
+  .event-type-switch input { accent-color:var(--accent); }
+  .form-hint { margin-top:8px; color:var(--ink-soft); font-size:12px; line-height:1.5; }
+  .offset-disclosure { margin-top:10px; padding-top:9px; border-top:1px solid var(--rule); }
+  .offset-disclosure summary { display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; list-style:none; color:var(--accent); font-size:14px; font-weight:700; }
+  .offset-disclosure summary::-webkit-details-marker { display:none; }
+  .offset-disclosure summary::after { content:'⌄'; color:var(--accent); font-size:18px; line-height:1; }
+  .offset-disclosure[open] summary::after { content:'⌃'; }
+  .offset-list { display:grid; gap:9px; margin-top:10px; }
+  .offset-row { display:grid; gap:9px; padding:11px; border:1px solid var(--rule-strong); border-radius:7px; background:#0d141c; color:var(--ink-soft); font-size:13px; line-height:1.5; }
+  .offset-row strong { color:var(--ink); font-size:14px; }
+  .offset-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .offset-cell { display:grid; gap:3px; min-width:0; padding:8px 9px; border-radius:6px; background:#141d27; }
+  .offset-label { color:var(--ink-soft); font-size:12px; }
+  .offset-value { color:var(--ink); font-size:13px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+  .offset-total { display:flex; align-items:baseline; justify-content:space-between; gap:10px; padding-top:8px; border-top:1px solid var(--rule); color:var(--ink); font-size:13px; }
+  .offset-total strong { font-size:15px; }
+  .offset-total.gain, .offset-total.gain strong { color:var(--gain); } .offset-total.loss, .offset-total.loss strong { color:var(--loss); }
+  .sale-open-note { margin-top:7px; color:var(--ink-soft); font-size:12px; }
   .entry-actions {
     display: flex;
     justify-content: flex-end;
     gap: 16px;
     margin-top: 10px;
+  }
+
+
+  .trade-sections { display:grid; gap:11px; margin-top:14px; padding-top:12px; border-top:1px solid var(--rule); }
+  .trade-panel, .sale-card { border:1px solid var(--rule-strong); border-radius:8px; background:#10161e; padding:12px; }
+  .buy-panel { border-left:3px solid var(--accent); }
+  .trade-panel-header, .trade-section-heading { display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:7px; }
+  .trade-panel-title, .trade-section-title { font-size:13px; font-weight:700; letter-spacing:.04em; }
+  .buy-panel .trade-panel-title { color:var(--accent); }
+  .trade-panel-count, .trade-section-count { color:var(--ink-soft); font-size:12px; }
+  .trade-panel-total { color:var(--ink); font-size:13px; font-weight:700; white-space:nowrap; }
+  .trade-list { display:flex; flex-direction:column; }
+  .trade-row { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; padding:9px 0; border-top:1px solid var(--rule); }
+  .trade-row-main { min-width:0; }
+  .trade-row-heading { display:flex; flex-wrap:wrap; align-items:baseline; gap:5px 10px; }
+  .trade-date { color:var(--ink-faint); font-size:12px; }
+  .trade-quantity { color:var(--ink); font-size:13px; font-weight:700; }
+  .trade-row-details, .sale-card-details { display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:5px; color:var(--ink-soft); font-size:12px; font-variant-numeric:tabular-nums; }
+  .trade-note { display:block; margin-top:5px; color:var(--ink-soft); font-size:12px; white-space:normal; }
+  .trade-row-actions { display:flex; flex-shrink:0; gap:7px; }
+  .trade-row-actions .btn-link, .sale-card .btn-link { font-size:11px; }
+  .sales-section { display:grid; gap:7px; }
+  .trade-section-heading { margin:0 2px; }
+  .sales-section .trade-section-title { color:var(--gain); }
+  .sale-card { padding:10px 12px; }
+  .sale-card-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .sale-card-date { color:var(--ink-soft); font-size:11px; }
+  .sale-card-quantity { display:block; margin-top:2px; color:var(--ink); font-size:12px; font-weight:700; }
+  .sale-card-pnl { font-size:12px; font-weight:700; text-align:right; white-space:nowrap; }
+  .sale-card-pnl.gain, .sale-return.gain { color:var(--gain); }
+  .sale-card-pnl.loss, .sale-return.loss { color:var(--loss); }
+  .sale-card-footer { display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-top:8px; }
+  .sale-overview-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px 14px; padding:8px 0 4px; border-top:1px solid var(--rule); }
+  .sale-overview-cell { display:flex; align-items:baseline; justify-content:space-between; gap:8px; font-size:13px; }
+  .sale-overview-cell span { color:var(--ink-soft); }
+  .sale-overview-cell strong { color:var(--ink); font-size:13px; font-variant-numeric:tabular-nums; text-align:right; }
+  .sale-overview-cell.pnl.gain strong { color:var(--gain); }
+  .sale-overview-cell.pnl.loss strong { color:var(--loss); }
+  .sale-return { font-size:11px; font-weight:700; }
+  .pnl-number { font-variant-numeric:tabular-nums; white-space:normal; }
+  .pnl-number.gain, .pnl-percent.gain { color:var(--gain); font-weight:700; }
+  .pnl-number.loss, .pnl-percent.loss { color:var(--loss); font-weight:700; }
+  .pnl-percent { font-size:12px; white-space:nowrap; }
+  @media (max-width:480px) {
+    .trade-panel, .sale-card { padding:10px; }
+    .trade-row { gap:5px; }
+    .trade-row-actions { flex-direction:column; gap:1px; }
+    .trade-row-actions .btn-link { padding:4px 2px; }
+    .sale-card-head { align-items:flex-start; }
   }
 
   .empty-state, .loading-state {
@@ -363,12 +463,17 @@
     border-bottom: 1px solid var(--rule-strong);
     white-space: nowrap;
   }
+  .trade-table th.sortable { cursor: pointer; user-select: none; touch-action: manipulation; }
+  .trade-table th.sortable:active { color: var(--ink); }
+  .trade-table th.sortable.active { color: var(--accent); }
   .trade-table td {
     padding: 11px 14px;
     border-bottom: 1px solid var(--rule);
+    border-right: 1px solid rgba(255,255,255,0.04);
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
+  .trade-table td:last-child { border-right: none; }
   .trade-table tbody tr { cursor: pointer; }
   .trade-table tbody tr:last-child td { border-bottom: none; }
   .trade-table tbody tr:active { background: rgba(255,255,255,0.04); }
@@ -398,7 +503,7 @@
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.62);
+    background: rgba(2,4,7,0.66);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -406,6 +511,7 @@
     z-index: 100;
   }
   .modal {
+    position: relative;
     background: var(--panel);
     border: 1px solid var(--rule-strong);
     border-radius: 14px;
@@ -414,7 +520,7 @@
     max-width: 460px;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 18px 48px rgba(0,0,0,0.45);
+    overflow-x: hidden;
   }
   .modal h2 { font-size: 17px; margin: 0 0 16px; color: var(--ink); }
 
@@ -477,6 +583,54 @@
   .btn-secondary:hover { background: var(--paper); }
   .btn-secondary:active { background: var(--rule); }
 
+  /* ---------- Confirm dialog ---------- */
+  .confirm-modal { max-width: 340px; text-align: center; }
+  .confirm-message { font-size: 14.5px; line-height: 1.6; margin: 2px 0 18px; color: var(--ink); }
+  .confirm-actions { justify-content: center; }
+  .btn-danger-solid {
+    background: var(--gain);
+    color: #fff;
+    border: none;
+    padding: 12px 20px;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    min-height: 44px;
+    flex: 1 1 auto;
+  }
+  .btn-danger-solid:active { opacity: 0.78; }
+
+  /* ---------- Toast ---------- */
+  .toast-container {
+    position: fixed;
+    left: 50%;
+    bottom: max(24px, calc(16px + env(safe-area-inset-bottom, 0px)));
+    transform: translateX(-50%);
+    z-index: 300;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 8px;
+    width: calc(100% - 40px);
+    max-width: 420px;
+    pointer-events: none;
+  }
+  .toast {
+    background: var(--panel);
+    border: 1px solid var(--rule-strong);
+    border-left: 3px solid var(--ink-faint);
+    border-radius: var(--radius-md);
+    padding: 12px 15px;
+    font-size: 13.5px;
+    color: var(--ink);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.22s, transform 0.22s;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast-error { border-left-color: var(--gain); }
+  .toast-success { border-left-color: var(--loss); }
+
   @media (max-width: 480px) {
     .app {
       padding-top: max(20px, env(safe-area-inset-top));
@@ -496,44 +650,29 @@
   <div id="storageWarning" class="storage-warning" style="display:none">⚠️ 這個瀏覽器目前無法使用本機儲存功能（可能在無痕模式，或封鎖了網站資料）。紀錄只會保留到這個分頁關閉為止，建議改用一般瀏覽模式開啟這個檔案。</div>
   <header class="app-header">
     <div>
-      <h1>股票交易記帳本</h1>
-      <p class="subtitle">記錄買賣股價與匯率，掌握真實台幣損益</p>
+      <h1>股票買賣記帳本</h1>
+      <p class="subtitle">整理買入、賣出與目前庫存明細</p>
+      <p class="subtitle">iPhone 安裝：先將此頁放到網站網址，再用 Safari「分享」→「加入主畫面」→「以網頁 App 開啟」</p>
     </div>
-    <button id="addBtn" class="btn-primary">+ 新增交易</button>
+    <div class="header-actions"><button id="addBtn" class="btn-primary">+ 新增交易</button></div>
   </header>
 
-  <section class="summary-hero">
+  <section class="summary-hero glass-edge">
     <div class="ring-wrap">
-      <svg class="ring-svg" viewBox="0 0 120 120">
-        <circle cx="60" cy="60" r="50" fill="none" stroke="var(--rule)" stroke-width="11"/>
-        <circle cx="60" cy="60" r="50" fill="none" id="ringFill" stroke="var(--rule-strong)" stroke-width="11" stroke-linecap="round" transform="rotate(-90 60 60)"/>
+      <svg class="ring-svg" viewBox="0 0 120 120" aria-hidden="true">
+        <circle cx="60" cy="60" r="49" fill="none" stroke="var(--rule)" stroke-width="9"/>
+        <circle cx="60" cy="60" r="49" fill="none" id="ringFill" stroke="var(--gain)" stroke-width="9" stroke-linecap="round" transform="rotate(-90 60 60)"/>
       </svg>
       <div class="ring-center">
-        <div class="ring-value" id="ringValue">--</div>
+        <div class="ring-value-row"><span class="ring-direction" id="ringDirection">▲</span><span class="ring-value mono" id="ringValue">--</span></div>
         <div class="ring-label">已實現<br>報酬率</div>
       </div>
     </div>
     <div class="hero-metrics">
-      <div class="hero-metric">
-        <span class="hero-dot dot-neutral" id="pnlDot"></span>
-        <span class="hero-metric-label">賣出損益</span>
-        <span class="hero-metric-value" id="summaryPnl">--</span>
-      </div>
-      <div class="hero-metric">
-        <span class="hero-dot dot-accent"></span>
-        <span class="hero-metric-label">持有成本</span>
-        <span class="hero-metric-value" id="summaryHoldingCost">--</span>
-      </div>
-      <div class="hero-metric">
-        <span class="hero-dot dot-neutral"></span>
-        <span class="hero-metric-label">總筆數</span>
-        <span class="hero-metric-value" id="summaryTotal">0</span>
-      </div>
-      <div class="hero-metric">
-        <span class="hero-dot dot-neutral"></span>
-        <span class="hero-metric-label">持有中</span>
-        <span class="hero-metric-value" id="summaryHolding">0</span>
-      </div>
+      <div class="hero-metric"><span class="hero-dot dot-neutral" id="pnlDot"></span><span class="hero-metric-label">賣出損益</span><span class="hero-metric-value" id="summaryPnl">--</span></div>
+      <div class="hero-metric"><span class="hero-dot dot-accent"></span><span class="hero-metric-label">持有成本</span><span class="hero-metric-value" id="summaryHoldingCost">--</span></div>
+      <div class="hero-metric"><span class="hero-dot dot-neutral"></span><span class="hero-metric-label">總筆數</span><span class="hero-metric-value" id="summaryTotal">0</span></div>
+      <div class="hero-metric"><span class="hero-dot dot-neutral"></span><span class="hero-metric-label">持有中</span><span class="hero-metric-value" id="summaryHolding">0</span></div>
     </div>
   </section>
 
@@ -541,26 +680,24 @@
 
   <div class="toolbar">
     <div class="toolbar-left">
-      <div class="filter-tabs">
-        <button class="filter-tab active" data-filter="all">全部</button>
-        <button class="filter-tab" data-filter="holding">持有中</button>
-        <button class="filter-tab" data-filter="realized">賣出</button>
-      </div>
       <div class="view-toggle">
-        <button class="view-tab active" data-view="card">明細</button>
-        <button class="view-tab" data-view="table">總覽</button>
+        <button class="view-tab active" data-view="details">明細</button>
+        <button class="view-tab" data-view="inventory">庫存</button>
       </div>
     </div>
     <div class="toolbar-actions">
       <button id="exportBtn" class="btn-link">匯出 CSV</button>
+      <button id="backupBtn" class="btn-link">備份</button>
+      <button id="restoreBtn" class="btn-link">還原</button>
       <button id="clearBtn" class="btn-link btn-link-danger">清除全部</button>
     </div>
+    <input type="file" id="restoreFileInput" accept="application/json" style="display:none">
   </div>
 
-  <div class="ledger" id="ledgerPanel">
+  <div class="ledger glass-edge" id="ledgerPanel">
     <div id="tradeList"></div>
   </div>
-  <div class="table-wrap" id="tableWrap" style="display:none">
+  <div class="table-wrap glass-edge" id="tableWrap" style="display:none">
     <table class="trade-table">
       <thead>
         <tr id="tableHeadRow">
@@ -578,111 +715,72 @@
 </div>
 
 <div id="modal" class="modal-overlay" style="display:none">
-  <div class="modal">
+  <div class="modal glass-edge">
     <h2 id="modalTitle">新增交易</h2>
     <form id="tradeForm">
-      <fieldset>
-        <legend>買入資訊</legend>
-
-        <label class="field-label">股票名稱</label>
-        <input name="stockName" required placeholder="例：台積電 ADR" list="stockNameList" autocomplete="off">
-
-        <label class="field-label">股票代號</label>
-        <input name="ticker" required placeholder="例：TSM" list="tickerList" autocomplete="off">
-        <datalist id="stockNameList"></datalist>
-        <datalist id="tickerList"></datalist>
-
-        <div class="form-row">
-          <div>
-            <label class="field-label">幣別</label>
-            <input name="currency" required value="USD" placeholder="USD">
-          </div>
-          <div>
-            <label class="field-label">股數</label>
-            <input name="shares" type="number" step="any" min="0" required placeholder="100">
-          </div>
-        </div>
-
-        <label class="field-label">買入日期</label>
-        <input name="buyDateTime" type="date" required>
-
-        <div class="form-row">
-          <div>
-            <label class="field-label">買入股價</label>
-            <input name="buyPrice" type="number" step="any" min="0" required placeholder="0.00">
-          </div>
-          <div>
-            <label class="field-label">買入匯率</label>
-            <input name="buyFxRate" type="number" step="any" min="0" required placeholder="31.50">
-          </div>
-        </div>
+      <input type="hidden" id="eventTypeValue" name="eventType" value="buy">
+      <fieldset><legend>股票資訊</legend>
+        <label class="field-label">股票名稱</label><input name="stockName" required placeholder="例：台積電 ADR" list="stockNameList" autocomplete="off">
+        <label class="field-label">股票代號</label><input name="ticker" required placeholder="例：TSM" list="tickerList" autocomplete="off">
+        <datalist id="stockNameList"></datalist><datalist id="tickerList"></datalist>
+        <label class="field-label">幣別</label><input name="currency" required value="USD" placeholder="USD">
       </fieldset>
-
-      <fieldset>
-        <legend>賣出資訊（尚未賣出可留空）</legend>
-
-        <label class="field-label">賣出日期時間</label>
-        <input name="sellDateTime" type="datetime-local">
-
-        <div class="form-row">
-          <div>
-            <label class="field-label">賣出股價</label>
-            <input name="sellPrice" type="number" step="any" min="0" placeholder="0.00">
-          </div>
-          <div>
-            <label class="field-label">賣出匯率</label>
-            <input name="sellFxRate" type="number" step="any" min="0" placeholder="31.50">
-          </div>
-        </div>
+      <fieldset><legend id="eventFieldsTitle">買入資訊</legend>
+        <label class="field-label" id="sharesFieldLabel">買入股數</label><input name="shares" type="number" step="any" min="0.0001" required placeholder="100">
+        <label class="field-label" id="dateFieldLabel">買入日期</label><input id="eventDateInput" name="dateTime" type="date" required>
+        <div class="form-row"><div><label class="field-label" id="priceFieldLabel">買入股價</label><input name="price" type="number" step="any" min="0" required placeholder="0.00"></div><div><label class="field-label" id="fxFieldLabel">買入匯率</label><input name="fxRate" type="number" step="any" min="0" required placeholder="31.50"></div></div>
+        <div id="offsetHelp" class="form-hint" style="display:none">賣出先配對最早尚未沖銷的買入；超出持股的賣出，之後買入會依時間沖銷。</div>
       </fieldset>
-
-      <label class="field-label">備註</label>
-      <textarea name="notes" placeholder="選填"></textarea>
-
-      <div class="modal-actions">
-        <button type="button" id="cancelBtn" class="btn-secondary">取消</button>
-        <button type="submit" id="saveAddAnotherBtn" class="btn-secondary">儲存並新增下一筆</button>
-        <button type="submit" class="btn-primary">儲存</button>
-      </div>
+      <label class="field-label">備註</label><textarea name="notes" placeholder="選填"></textarea>
+      <div class="modal-actions"><button type="button" id="cancelBtn" class="btn-secondary">取消</button><button type="submit" id="saveAddAnotherBtn" class="btn-secondary">儲存並新增下一筆</button><button type="submit" class="btn-primary">儲存</button></div>
     </form>
   </div>
 </div>
 
+<div id="confirmOverlay" class="modal-overlay confirm-overlay" style="display:none">
+  <div class="modal confirm-modal">
+    <p id="confirmMessage" class="confirm-message"></p>
+    <div class="modal-actions confirm-actions">
+      <button type="button" id="confirmCancelBtn" class="btn-secondary">取消</button>
+      <button type="button" id="confirmOkBtn" class="btn-danger-solid">確定</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer" class="toast-container"></div>
+
 <script>
   let trades = [];
   let currentFilter = 'all';
-  let currentView = 'card';
+  let currentView = 'details';
   let searchQuery = '';
   let editingId = null;
 
-  /* ---------- helpers ---------- */
-  function isSoldTrade(t) {
-    return !!(t.sellDateTime && t.sellPrice !== null && t.sellPrice !== undefined && t.sellFxRate !== null && t.sellFxRate !== undefined);
+  /* ---------- helpers and transaction migration ---------- */
+  function makeTradeId() { return 'trade_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+  function eventTime(t) {
+    const value=String(t.dateTime||''), normalized=/^\d{4}-\d{2}-\d{2}$/.test(value)?value+'T00:00:00':value;
+    const time=new Date(normalized).getTime(); return isNaN(time)?0:time;
   }
-
-  function calcMetrics(trade) {
-    const buyCostForeign = trade.buyPrice * trade.shares;
-    const buyCostTWD = buyCostForeign * trade.buyFxRate;
-    const sold = isSoldTrade(trade);
-    let result = { buyCostForeign: buyCostForeign, buyCostTWD: buyCostTWD, isSold: sold,
-      sellAmountTWD: null, pnlTWD: null, returnPct: null, priceEffect: null, fxEffect: null };
-    if (sold) {
-      const sellAmountForeign = trade.sellPrice * trade.shares;
-      const sellAmountTWD = sellAmountForeign * trade.sellFxRate;
-      const pnlTWD = sellAmountTWD - buyCostTWD;
-      const returnPct = buyCostTWD !== 0 ? (pnlTWD / buyCostTWD) * 100 : 0;
-      const priceEffect = (trade.sellPrice - trade.buyPrice) * trade.shares * trade.buyFxRate;
-      const fxEffect = trade.sellPrice * trade.shares * (trade.sellFxRate - trade.buyFxRate);
-      result.sellAmountTWD = sellAmountTWD;
-      result.pnlTWD = pnlTWD;
-      result.returnPct = returnPct;
-      result.priceEffect = priceEffect;
-      result.fxEffect = fxEffect;
-    }
-    return result;
+  function normalizeTransactions(records) {
+    const result=[];
+    (Array.isArray(records)?records:[]).forEach(function(t,index) {
+      if (!t||typeof t!=='object') return;
+      if ((t.type==='buy'||t.type==='sell')&&t.dateTime) {
+        result.push({id:String(t.id||makeTradeId()),type:t.type,stockName:String(t.stockName||''),ticker:String(t.ticker||'').trim().toUpperCase(),currency:String(t.currency||'USD').trim().toUpperCase(),shares:Number(t.shares)||0,dateTime:String(t.dateTime),price:Number(t.price),fxRate:Number(t.fxRate),notes:String(t.notes||'')}); return;
+      }
+      if (t.buyDateTime&&t.stockName&&t.ticker) {
+        const id=String(t.id||makeTradeId()+'_'+index), common={stockName:String(t.stockName),ticker:String(t.ticker).trim().toUpperCase(),currency:String(t.currency||'USD').trim().toUpperCase()};
+        result.push(Object.assign({id:id,type:'buy',shares:Number(t.shares)||0,dateTime:String(t.buyDateTime),price:Number(t.buyPrice),fxRate:Number(t.buyFxRate),notes:String(t.notes||'')},common));
+        const sold=Number(t.sellShares||t.shares)||0;
+        if(t.sellDateTime&&t.sellPrice!=null&&t.sellFxRate!=null&&sold>0) result.push(Object.assign({id:id+'_sale',type:'sell',shares:sold,dateTime:String(t.sellDateTime),price:Number(t.sellPrice),fxRate:Number(t.sellFxRate),notes:''},common));
+      }
+    }); return result;
   }
+  function isValidEvent(t) { return t&&(t.type==='buy'||t.type==='sell')&&t.id&&t.stockName&&t.ticker&&t.dateTime&&Number(t.shares)>0&&isFinite(Number(t.price))&&Number(t.price)>=0&&isFinite(Number(t.fxRate))&&Number(t.fxRate)>=0; }
+  function formatEventDate(t) { return t.type==='buy'?formatDate(t.dateTime):formatDateTime(t.dateTime); }
 
-  function formatNum(num, decimals) {
+    function formatNum(num, decimals) {
     if (decimals === undefined) decimals = 2;
     if (num === null || num === undefined || isNaN(num)) return '--';
     return Number(num).toLocaleString('zh-TW', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
@@ -708,6 +806,12 @@
     if (num === null || num === undefined || isNaN(num)) return '--';
     const mark = num > 0 ? '▲' : num < 0 ? '▼' : '';
     return mark + Math.abs(num).toFixed(1) + '%';
+  }
+
+  function formatPnlWithPct(amount, basis) {
+    if (amount === null || amount === undefined || isNaN(amount)) return '--';
+    const cls=amount>0?'gain':amount<0?'loss':'',pct=Number(basis)>0?' <span class="pnl-percent '+cls+'">('+formatSignedPct(Number(amount)/Number(basis)*100)+')</span>':'';
+    return '<span class="pnl-number '+cls+'">'+formatSigned(amount)+pct+'</span>';
   }
 
   function formatDateTime(dtStr) {
@@ -749,22 +853,16 @@
   }
 
   function loadTrades() {
-    if (!hasLocalStorage()) {
-      document.getElementById('storageWarning').style.display = 'block';
-      trades = [];
-      render();
-      return;
-    }
+    if(!hasLocalStorage()) { document.getElementById('storageWarning').style.display='block'; trades=[]; render(); return; }
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      trades = raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      trades = [];
-    }
+      const raw=localStorage.getItem(STORAGE_KEY), parsed=raw?JSON.parse(raw):[];
+      trades=normalizeTransactions(parsed);
+      if(raw&&JSON.stringify(parsed)!==JSON.stringify(trades)) saveTrades();
+    } catch(e) { trades=[]; }
     render();
   }
 
-  function saveTrades() {
+    function saveTrades() {
     if (!hasLocalStorage()) {
       document.getElementById('storageWarning').style.display = 'block';
       return;
@@ -772,7 +870,7 @@
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
     } catch (e) {
-      alert('儲存失敗：瀏覽器的本機儲存空間可能已滿。建議先用「匯出 CSV」備份資料。');
+      showToast('儲存失敗：瀏覽器的本機儲存空間可能已滿。建議先用「匯出 CSV」備份資料。', 'error');
     }
   }
 
@@ -798,326 +896,405 @@
     }).join('');
   }
 
-  function todayDateStr() {
-    const d = new Date();
-    const pad = function(n) { return String(n).padStart(2, '0'); };
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  }
-
+  function todayDateStr() { const d=new Date(),p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+  function localDateTimeStr() { const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,16); }
   function getLastUsedDefaults() {
-    if (trades.length === 0) return { currency: 'USD', buyFxRate: '' };
-    const last = trades[trades.length - 1];
-    return { currency: last.currency || 'USD', buyFxRate: last.buyFxRate != null ? last.buyFxRate : '' };
+    if(!trades.length) return {currency:'USD',fxRate:''};
+    const last=trades.slice().sort((a,b)=>eventTime(a)-eventTime(b)).slice(-1)[0];
+    return {currency:last.currency||'USD',fxRate:last.fxRate!=null?last.fxRate:''};
+  }
+  function setEventType(type) {
+    const sell=type==='sell'; document.getElementById('eventTypeValue').value=sell?'sell':'buy';
+    document.getElementById('eventFieldsTitle').textContent=sell?'賣出資訊':'買入資訊';
+    document.getElementById('sharesFieldLabel').textContent=sell?'賣出股數':'買入股數';
+    document.getElementById('dateFieldLabel').textContent=sell?'賣出日期時間':'買入日期';
+    document.getElementById('priceFieldLabel').textContent=sell?'賣出股價':'買入股價';
+    document.getElementById('fxFieldLabel').textContent=sell?'賣出匯率':'買入匯率';
+    document.getElementById('eventDateInput').type=sell?'datetime-local':'date';
+    document.getElementById('offsetHelp').style.display=sell?'block':'none';
+  }
+  function applyNewTradeDefaults(type) {
+    const d=getLastUsedDefaults(),form=document.getElementById('tradeForm'); form.currency.value=d.currency;
+    if(d.fxRate!=='') form.fxRate.value=d.fxRate;
+    form.dateTime.value=type==='sell'?localDateTimeStr():todayDateStr();
+  }
+  function openNewTransaction(type, groupKey) {
+    editingId=null; document.getElementById('modalTitle').textContent=type==='sell'?'新增賣出':'新增交易';
+    const form=document.getElementById('tradeForm');form.reset();setEventType(type);applyNewTradeDefaults(type);
+    if(type==='sell'&&groupKey){
+      const group=groupTradesByStock(trades).find(function(g){return g.key===groupKey;});
+      if(group){form.stockName.value=group.stockName;form.ticker.value=group.ticker;form.currency.value=group.currency;form.shares.value=group.metrics.remainingShares;if(group.metrics.sellAmountForeign)form.fxRate.value=group.metrics.sellFxRate;}
+    }
+    openModal();
   }
 
-  function applyNewTradeDefaults() {
-    const defaults = getLastUsedDefaults();
-    document.querySelector('[name="currency"]').value = defaults.currency;
-    if (defaults.buyFxRate !== '') document.querySelector('[name="buyFxRate"]').value = defaults.buyFxRate;
-    document.querySelector('[name="buyDateTime"]').value = todayDateStr();
-  }
-
-  function renderSummary() {
-    const totalCount = trades.length;
-    const realizedTrades = trades.filter(isSoldTrade);
-    const holdingTrades = trades.filter(function(t) { return !isSoldTrade(t); });
-    const holdingCount = holdingTrades.length;
-
-    let totalPnl = 0;
-    let realizedCostSum = 0;
-    realizedTrades.forEach(function(t) {
-      const m = calcMetrics(t);
-      totalPnl += m.pnlTWD;
-      realizedCostSum += m.buyCostTWD;
-    });
-    const overallReturnPct = (realizedTrades.length > 0 && realizedCostSum !== 0) ? (totalPnl / realizedCostSum) * 100 : null;
-
-    let holdingCost = 0;
-    holdingTrades.forEach(function(t) {
-      const m = calcMetrics(t);
-      holdingCost += m.buyCostTWD;
-    });
-
-    document.getElementById('summaryTotal').textContent = totalCount;
-    document.getElementById('summaryHolding').textContent = holdingCount;
-
+    function renderSummary() {
+    const groups = groupTradesByStock(trades);
+    const realizedGroups = groups.filter(function(g) { return g.metrics.realizedBasisTWD > 0; });
+    const holdingGroups = groups.filter(function(g) { return g.metrics.remainingShares > 1e-8; });
+    const totalPnl = realizedGroups.reduce(function(sum, g) { return sum + g.metrics.pnlTWD; }, 0);
+    const realizedCost = realizedGroups.reduce(function(sum, g) { return sum + g.metrics.soldCostTWD; }, 0);
+    const holdingCost = holdingGroups.reduce(function(sum, g) { return sum + g.metrics.remainingCostTWD; }, 0);
+    const overallReturnPct = realizedCost ? totalPnl / realizedCost * 100 : null;
+    document.getElementById('summaryTotal').textContent = trades.length;
+    document.getElementById('summaryHolding').textContent = holdingGroups.length;
     const pnlEl = document.getElementById('summaryPnl');
     const pnlDot = document.getElementById('pnlDot');
     const pnlClass = totalPnl > 0 ? 'gain' : totalPnl < 0 ? 'loss' : '';
-    pnlEl.textContent = realizedTrades.length > 0 ? formatSigned(totalPnl) : '--';
+    pnlEl.textContent = realizedGroups.length ? formatSigned(totalPnl) : '--';
     pnlEl.className = 'hero-metric-value' + (pnlClass ? ' ' + pnlClass : '');
     pnlDot.className = 'hero-dot' + (pnlClass ? ' ' + pnlClass : ' dot-neutral');
-
-    document.getElementById('summaryHoldingCost').textContent = holdingCount > 0 ? formatTWD(holdingCost) : '--';
-
+    document.getElementById('summaryHoldingCost').textContent = holdingGroups.length ? formatTWD(holdingCost) : '--';
     updateReturnRing(overallReturnPct);
   }
 
   function updateReturnRing(returnPct) {
     const ring = document.getElementById('ringFill');
     const valueEl = document.getElementById('ringValue');
-    const r = 50;
-    const circumference = 2 * Math.PI * r;
+    const directionEl = document.getElementById('ringDirection');
+    const circumference = 2 * Math.PI * 49;
     ring.setAttribute('stroke-dasharray', circumference.toFixed(2));
+    ring.setAttribute('stroke-dashoffset', '0');
 
     if (returnPct === null) {
-      ring.setAttribute('stroke-dashoffset', circumference.toFixed(2));
       ring.style.stroke = 'var(--rule-strong)';
       valueEl.style.color = 'var(--ink-soft)';
       valueEl.textContent = '--';
+      directionEl.textContent = '';
+      directionEl.classList.remove('loss');
       return;
     }
 
-    const clamped = Math.max(-50, Math.min(50, returnPct));
-    const ratio = Math.max(Math.abs(clamped) / 50, returnPct === 0 ? 0 : 0.03);
-    const offset = circumference * (1 - ratio);
-    ring.setAttribute('stroke-dashoffset', offset.toFixed(2));
-
-    const color = returnPct > 0 ? 'var(--gain)' : returnPct < 0 ? 'var(--loss)' : 'var(--ink-faint)';
+    const color = returnPct < 0 ? 'var(--loss)' : 'var(--gain)';
     ring.style.stroke = color;
-    valueEl.style.color = returnPct === 0 ? 'var(--ink)' : color;
-    valueEl.textContent = formatSignedPct(returnPct);
+    valueEl.style.color = 'var(--ink)';
+    valueEl.textContent = (returnPct < 0 ? '-' : '') + Math.abs(returnPct).toFixed(1) + '%';
+    directionEl.textContent = returnPct < 0 ? '▼' : '▲';
+    directionEl.classList.toggle('loss', returnPct < 0);
+  }
+
+  function groupTradesByStock(records) {
+    const buckets=Object.create(null);
+    records.forEach(function(t) {
+      const ticker=String(t.ticker||'').trim().toUpperCase(), identity=ticker||String(t.stockName||'').trim().toLowerCase();
+      const key=identity+'::'+String(t.currency||'').trim().toUpperCase();
+      if(!buckets[key]) buckets[key]={key:key,ticker:ticker,stockName:t.stockName,currency:t.currency,trades:[]};
+      buckets[key].trades.push(t);
+    });
+    return Object.keys(buckets).map(function(key) {
+      const g=buckets[key];
+      g.trades.sort(function(a,b){const diff=eventTime(a)-eventTime(b);if(diff)return diff;if(a.type===b.type)return 0;return a.type==='buy'?-1:1;});
+      const m={buyShares:0,soldShares:0,remainingShares:0,openShortShares:0,buyCostTWD:0,soldCostTWD:0,remainingCostTWD:0,remainingForeignCost:0,remainingFxRate:0,remainingAvgPrice:0,sellAmountTWD:0,pnlTWD:0,realizedBasisTWD:0,priceEffect:0,fxEffect:0,buyAmountForeign:0,sellAmountForeign:0,buyFxWeighted:0,sellFxWeighted:0};
+      const summaries=Object.create(null),longLots=[],shortLots=[],matches=[];
+      g.trades.forEach(function(t){summaries[t.id]={event:t,matches:[],matchedShares:0,matchedBasisTWD:0,matchedPnlTWD:0,remainingShares:0,openShortShares:0};});
+      function recordMatch(buy,sell,qty,side){
+        const buyCost=(Number(buy.price)||0)*(Number(buy.fxRate)||0)*qty, proceeds=(Number(sell.price)||0)*(Number(sell.fxRate)||0)*qty;
+        const pnl=proceeds-buyCost,basis=side==='short'?proceeds:buyCost;
+        const match={buyEvent:buy,sellEvent:sell,shares:qty,side:side,buyCostTWD:buyCost,sellAmountTWD:proceeds,basisTWD:basis,pnlTWD:pnl,buyFxRate:Number(buy.fxRate)||0,sellFxRate:Number(sell.fxRate)||0};
+        matches.push(match);
+        [buy,sell].forEach(function(e){const q=summaries[e.id];q.matches.push(match);q.matchedShares+=qty;q.matchedBasisTWD+=basis;q.matchedPnlTWD+=pnl;});
+        m.realizedBasisTWD+=basis;m.pnlTWD+=pnl;
+        m.priceEffect+=((Number(sell.price)||0)-(Number(buy.price)||0))*qty*(Number(buy.fxRate)||0);
+        m.fxEffect+=(Number(sell.price)||0)*qty*((Number(sell.fxRate)||0)-(Number(buy.fxRate)||0));
+      }
+      g.trades.forEach(function(t){
+        const qty=Number(t.shares)||0,summary=summaries[t.id],foreign=(Number(t.price)||0)*qty;
+        if(t.type==='buy'){
+          m.buyShares+=qty;m.buyCostTWD+=foreign*(Number(t.fxRate)||0);m.buyAmountForeign+=foreign;m.buyFxWeighted+=foreign*(Number(t.fxRate)||0);
+          let left=qty;
+          while(left>1e-8&&shortLots.length){const lot=shortLots[0],used=Math.min(left,lot.remaining);recordMatch(t,lot.event,used,'short');left-=used;lot.remaining-=used;summaries[lot.event.id].openShortShares=Math.max(0,summaries[lot.event.id].openShortShares-used);if(lot.remaining<=1e-8)shortLots.shift();}
+          if(left<=1e-8)left=0;summary.remainingShares=left;if(left>0)longLots.push({event:t,remaining:left});
+        }else{
+          m.soldShares+=qty;m.sellAmountTWD+=foreign*(Number(t.fxRate)||0);m.sellAmountForeign+=foreign;m.sellFxWeighted+=foreign*(Number(t.fxRate)||0);
+          let left=qty;
+          while(left>1e-8&&longLots.length){const lot=longLots[0],used=Math.min(left,lot.remaining);recordMatch(lot.event,t,used,'long');left-=used;lot.remaining-=used;summaries[lot.event.id].remainingShares=Math.max(0,summaries[lot.event.id].remainingShares-used);if(lot.remaining<=1e-8)longLots.shift();}
+          if(left<=1e-8)left=0;summary.openShortShares=left;if(left>0)shortLots.push({event:t,remaining:left});
+        }
+      });
+      m.remainingShares=longLots.reduce((sum,x)=>sum+x.remaining,0);
+      m.remainingCostTWD=longLots.reduce((sum,x)=>sum+x.remaining*(Number(x.event.price)||0)*(Number(x.event.fxRate)||0),0);
+      m.remainingForeignCost=longLots.reduce((sum,x)=>sum+x.remaining*(Number(x.event.price)||0),0);
+      m.remainingFxRate=m.remainingForeignCost?m.remainingCostTWD/m.remainingForeignCost:0;
+      m.remainingAvgPrice=m.remainingShares?m.remainingForeignCost/m.remainingShares:0;
+      m.openShortShares=shortLots.reduce((sum,x)=>sum+x.remaining,0);m.soldCostTWD=m.realizedBasisTWD;
+      m.buyFxRate=m.buyAmountForeign?m.buyFxWeighted/m.buyAmountForeign:0;
+      m.sellFxRate=m.sellAmountForeign?m.sellFxWeighted/m.sellAmountForeign:0;
+      m.returnPct=m.realizedBasisTWD?m.pnlTWD/m.realizedBasisTWD*100:null;
+      g.metrics=m;g.eventMetrics=summaries;g.matches=matches;
+      g.latestActivity=g.trades.reduce(function(latest,t){return Math.max(latest,eventTime(t));},0);
+      const buys=g.trades.filter(function(t){return t.type==='buy';});g.firstBuy=buys.length?buys[0].dateTime:'';
+      return g;
+    });
   }
 
   function renderList() {
-    let filtered = trades;
-    if (currentFilter === 'holding') filtered = filtered.filter(function(t) { return !isSoldTrade(t); });
-    else if (currentFilter === 'realized') filtered = filtered.filter(isSoldTrade);
-    if (searchQuery) {
-      filtered = filtered.filter(function(t) {
-        const name = (t.stockName || '').toLowerCase();
-        const ticker = (t.ticker || '').toLowerCase();
-        return name.indexOf(searchQuery) !== -1 || ticker.indexOf(searchQuery) !== -1;
-      });
-    }
-
-    filtered = filtered.slice().sort(function(a, b) { return new Date(b.buyDateTime) - new Date(a.buyDateTime); });
-
+    let groups = groupTradesByStock(trades);
+    if (searchQuery) groups = groups.filter(function(g) {
+      return String(g.stockName || '').toLowerCase().indexOf(searchQuery) !== -1 ||
+        String(g.ticker || '').toLowerCase().indexOf(searchQuery) !== -1;
+    });
+    groups.sort(function(a,b) { return b.latestActivity - a.latestActivity; });
     const listEl = document.getElementById('tradeList');
     const emptyEl = document.getElementById('emptyState');
     const panelEl = document.getElementById('ledgerPanel');
     const tableWrapEl = document.getElementById('tableWrap');
-
-    if (filtered.length === 0) {
+    const hasVisibleRows=currentView==='inventory'?groups.some(function(g){return g.metrics.remainingShares>1e-8;}):groups.some(function(g){return g.trades.some(function(t){return t.type==='sell';});});
+    if (!hasVisibleRows) {
       listEl.innerHTML = '';
       document.getElementById('tradeTableBody').innerHTML = '';
-      panelEl.style.display = 'none';
-      tableWrapEl.style.display = 'none';
-      emptyEl.style.display = 'block';
-      emptyEl.textContent = trades.length === 0
-        ? '尚無交易紀錄，點擊「+ 新增交易」開始記錄第一筆買賣'
-        : (searchQuery ? '沒有符合搜尋的紀錄' : '這個篩選條件下沒有紀錄');
+      panelEl.style.display = 'none'; tableWrapEl.style.display = 'none'; emptyEl.style.display = 'block';
+      emptyEl.textContent = trades.length === 0 ? '尚無買賣紀錄，點擊「+ 新增交易」開始記帳' :
+        (searchQuery ? '沒有符合搜尋的紀錄' : (currentView === 'inventory' ? '目前沒有庫存' : '目前沒有賣出明細'));
       return;
     }
     emptyEl.style.display = 'none';
-
-    if (currentView === 'table') {
-      panelEl.style.display = 'none';
-      tableWrapEl.style.display = '';
-      renderTable(filtered);
-    } else {
-      tableWrapEl.style.display = 'none';
-      panelEl.style.display = '';
-      listEl.innerHTML = filtered.map(renderCard).join('');
+    tableWrapEl.style.display = 'none';
+    panelEl.style.display = '';
+    if(currentView==='inventory') listEl.innerHTML=renderInventoryTable(groups);
+    else {
+      const sales=[];groups.forEach(function(g){g.trades.filter(function(t){return t.type==='sell';}).forEach(function(t){sales.push({group:g,event:t});});});
+      sales.sort(function(a,b){return eventTime(b.event)-eventTime(a.event);});
+      listEl.innerHTML=sales.map(function(x){return renderSaleCard(x.group,x.event);}).join('');
     }
   }
 
-  function renderTable(filtered) {
-    const theadRow = document.getElementById('tableHeadRow');
-    const tbody = document.getElementById('tradeTableBody');
-
+  let sortState = { key:null, dir:1 };
+  function getSortValue(group,key) {
+    const m = group.metrics;
+    if (key === 'ticker') return (group.ticker || '').toLowerCase();
+    if (key === 'buyDate') return new Date(group.firstBuy).getTime();
+    if (key === 'status') return m.remainingShares > 1e-8 ? 0 : 1;
+    if (key === 'shares') return m.buyShares;
+    if (key === 'sellShares') return m.soldShares;
+    if (key === 'remainingShares') return m.remainingShares;
+    if (key === 'buyFx') return m.buyFxRate;
+    if (key === 'sellFx') return m.sellFxRate || -Infinity;
+    if (key === 'buyCost') return currentFilter === 'holding' ? m.remainingCostTWD : m.soldCostTWD;
+    if (key === 'sellCost') return m.sellAmountTWD;
+    if (key === 'pnl') return m.pnlTWD;
+    if (key === 'returnPct') return m.returnPct === null ? -Infinity : m.returnPct;
+    return 0;
+  }
+  function sortableTh(label,key,numCell) {
+    const active = sortState.key === key, arrow = active ? (sortState.dir === 1 ? ' ▲' : ' ▼') : '';
+    return '<th class="sortable' + (numCell ? ' num-cell' : '') + (active ? ' active' : '') + '" data-sort="' + key + '">' + label + arrow + '</th>';
+  }
+  function renderTable(groups) {
+    const theadRow = document.getElementById('tableHeadRow'), tbody = document.getElementById('tradeTableBody');
+    if (sortState.key) groups = groups.slice().sort(function(a,b) {
+      const x = getSortValue(a,sortState.key), y = getSortValue(b,sortState.key);
+      return x < y ? -sortState.dir : x > y ? sortState.dir : 0;
+    });
     if (currentFilter === 'holding') {
-      theadRow.innerHTML = '<th>股票</th><th>買入日期</th><th class="num-cell">匯率</th><th class="num-cell">持有成本</th>';
-      tbody.innerHTML = filtered.map(renderTableRowHolding).join('');
+      theadRow.innerHTML = sortableTh('股票','ticker') + sortableTh('目前剩餘股數','remainingShares',true);
+      tbody.innerHTML = groups.map(renderTableRowHolding).join('');
     } else if (currentFilter === 'realized') {
-      theadRow.innerHTML = '<th>股票</th><th>買入日期</th><th class="num-cell">買入匯率</th><th class="num-cell">賣出匯率</th><th class="num-cell">買入成本</th><th class="num-cell">賣出成本</th><th class="num-cell">損益</th><th class="num-cell">報酬率</th>';
-      tbody.innerHTML = filtered.map(renderTableRowRealized).join('');
+      theadRow.innerHTML = sortableTh('股票','ticker') + sortableTh('買入股數','shares',true) + sortableTh('賣出股數','sellShares',true) + sortableTh('買入匯率','buyFx',true) + sortableTh('賣出匯率','sellFx',true) + sortableTh('賣出成本','buyCost',true) + sortableTh('賣出金額','sellCost',true) + sortableTh('損益','pnl',true) + sortableTh('報酬率','returnPct',true);
+      tbody.innerHTML = groups.map(renderTableRowRealized).join('');
     } else {
-      theadRow.innerHTML = '<th>股票</th><th>買入日期</th><th>狀態</th><th class="num-cell">損益</th><th class="num-cell">報酬率</th>';
-      tbody.innerHTML = filtered.map(renderTableRowAll).join('');
+      theadRow.innerHTML = sortableTh('股票','ticker') + sortableTh('首次買入','buyDate') + sortableTh('買入股數','shares',true) + sortableTh('賣出股數','sellShares',true) + sortableTh('狀態','status') + sortableTh('已實現損益','pnl',true) + sortableTh('報酬率','returnPct',true);
+      tbody.innerHTML = groups.map(renderTableRowAll).join('');
     }
   }
-
-  function tickerCell(t) {
-    return '<td><span class="cell-ticker">' + escapeHtml(t.ticker) + '</span><span class="cell-name">' + escapeHtml(t.stockName) + '</span></td>';
+  function tickerCell(group) {
+    return '<td><span class="cell-ticker mono">' + escapeHtml(group.ticker) + '</span><span class="cell-name">' + escapeHtml(group.stockName) + '</span></td>';
+  }
+  function groupRowTarget(group) { return group.trades[group.trades.length - 1].id; }
+  function renderTableRowAll(group) {
+    const m=group.metrics,hasSales=m.soldShares>0,status=m.openShortShares>1e-8?'賣出未回補':(m.remainingShares>1e-8?(hasSales?'部分持有':'持有中'):'已實現');
+    const cls=m.pnlTWD>0?'gain':m.pnlTWD<0?'loss':'',realized=m.realizedBasisTWD>0;
+    return '<tr onclick="openEdit(\''+groupRowTarget(group)+'\')">'+tickerCell(group)+'<td>'+formatDate(group.firstBuy)+'</td><td class="num-cell">'+formatShares(m.buyShares)+'</td><td class="num-cell">'+(hasSales?formatShares(m.soldShares):'--')+'</td><td>'+status+'</td><td class="num-cell '+cls+'">'+(realized?formatSigned(m.pnlTWD):'--')+'</td><td class="num-cell '+cls+'">'+(m.returnPct!==null?formatSignedPct(m.returnPct):'--')+'</td></tr>';
+  }
+  function renderTableRowHolding(group) {
+    return '<tr onclick="openEdit(\''+groupRowTarget(group)+'\')">'+tickerCell(group)+'<td class="num-cell">'+formatShares(group.metrics.remainingShares)+' 股</td></tr>';
+  }
+  function renderTableRowRealized(group) {
+    const m=group.metrics,cls=m.pnlTWD>0?'gain':m.pnlTWD<0?'loss':'';
+    return '<tr onclick="openEdit(\''+groupRowTarget(group)+'\')">'+tickerCell(group)+'<td class="num-cell">'+formatShares(m.buyShares)+'</td><td class="num-cell">'+formatShares(m.soldShares)+'</td><td class="num-cell">'+formatNum(m.buyAmountForeign?m.buyFxRate:null,4)+'</td><td class="num-cell">'+formatNum(m.sellAmountForeign?m.sellFxRate:null,4)+'</td><td class="num-cell">'+(m.realizedBasisTWD?formatTWD(m.realizedBasisTWD):'--')+'</td><td class="num-cell">'+formatTWD(m.sellAmountTWD)+'</td><td class="num-cell '+cls+'">'+(m.realizedBasisTWD?formatSigned(m.pnlTWD):'--')+'</td><td class="num-cell '+cls+'">'+(m.returnPct!==null?formatSignedPct(m.returnPct):'--')+'</td></tr>';
   }
 
-  function renderTableRowAll(t) {
-    const m = calcMetrics(t);
-    const sold = m.isSold;
-    const pnlClass = sold ? (m.pnlTWD > 0 ? 'gain' : m.pnlTWD < 0 ? 'loss' : '') : '';
-    return '<tr onclick="openEdit(\'' + t.id + '\')">' +
-      tickerCell(t) +
-      '<td>' + formatDate(t.buyDateTime) + '</td>' +
-      '<td>' + (sold ? '賣出' : '持有中') + '</td>' +
-      '<td class="num-cell ' + pnlClass + '">' + (sold ? formatSigned(m.pnlTWD) : '--') + '</td>' +
-      '<td class="num-cell ' + pnlClass + '">' + (sold ? formatSignedPct(m.returnPct) : '--') + '</td>' +
-    '</tr>';
+    function eventLabel(group,event) {
+    const list=group.trades.filter(function(t){return t.type===event.type;}),index=list.findIndex(function(t){return t.id===event.id;});
+    return (event.type==='buy'?'買入':'賣出')+' #'+(index+1);
+  }
+  function renderOffsetMatch(group,match) {
+    const cls=match.pnlTWD>0?'gain':match.pnlTWD<0?'loss':'',priceEffect=((Number(match.sellEvent.price)||0)-(Number(match.buyEvent.price)||0))*match.shares*match.buyFxRate,fxEffect=(Number(match.sellEvent.price)||0)*match.shares*(match.sellFxRate-match.buyFxRate);
+    return '<div class="offset-row"><strong>'+eventLabel(group,match.sellEvent)+' ↔ '+eventLabel(group,match.buyEvent)+' · '+formatShares(match.shares)+' 股</strong>'+
+      '<div class="offset-grid"><div class="offset-cell"><span class="offset-label">賣出日期</span><strong class="offset-value">'+formatEventDate(match.sellEvent)+'</strong></div><div class="offset-cell"><span class="offset-label">買入日期</span><strong class="offset-value">'+formatEventDate(match.buyEvent)+'</strong></div>'+
+      '<div class="offset-cell"><span class="offset-label">賣出匯率</span><strong class="offset-value">'+formatNum(match.sellFxRate,4)+'</strong></div><div class="offset-cell"><span class="offset-label">買入匯率</span><strong class="offset-value">'+formatNum(match.buyFxRate,4)+'</strong></div>'+
+      '<div class="offset-cell"><span class="offset-label">股票損益</span><strong class="offset-value">'+formatPnlWithPct(priceEffect,match.basisTWD)+'</strong></div><div class="offset-cell"><span class="offset-label">匯差損益</span><strong class="offset-value">'+formatPnlWithPct(fxEffect,match.basisTWD)+'</strong></div></div>'+
+      '<div class="offset-total '+cls+'"><span>沖銷損益</span><strong>'+formatPnlWithPct(match.pnlTWD,match.basisTWD)+'</strong></div></div>';
+  }
+  function renderBuyRows(group,buyTrades) {
+    return buyTrades.map(function(t){
+      const m=group.eventMetrics[t.id],cost=(Number(t.shares)||0)*(Number(t.price)||0)*(Number(t.fxRate)||0);
+      const details=m.matches.length?'<div class="offset-list">'+m.matches.map(function(x){return renderOffsetMatch(group,x);}).join('')+'</div>':'';
+      return '<div class="trade-row"><div class="trade-row-main"><div class="trade-row-heading"><span class="trade-date mono">'+formatDate(t.dateTime)+'</span><span class="trade-quantity">買入 '+formatShares(t.shares)+' 股</span></div>'+
+        '<div class="trade-row-details"><span>'+escapeHtml(t.currency)+' '+formatNum(t.price)+' / 股</span><span>買入匯率 '+formatNum(t.fxRate,4)+'</span><span>投入 '+formatTWD(cost)+'</span></div>'+(t.notes?'<span class="trade-note">'+escapeHtml(t.notes)+'</span>':'')+details+'</div>'+
+        '<div class="trade-row-actions"><button class="btn-link" onclick="openEdit(\''+t.id+'\')">編輯</button><button class="btn-link btn-link-danger" onclick="deleteTrade(\''+t.id+'\')">刪除</button></div></div>';
+    }).join('');
+  }
+  function renderSaleCard(group,t) {
+    const m=group.eventMetrics[t.id],cls=m.matchedPnlTWD>0?'gain':m.matchedPnlTWD<0?'loss':'',proceeds=(Number(t.shares)||0)*(Number(t.price)||0)*(Number(t.fxRate)||0);
+    const roi=m.matchedBasisTWD?m.matchedPnlTWD/m.matchedBasisTWD*100:null,open=m.openShortShares||0;
+    const matchedBuyForeign=m.matches.reduce(function(sum,x){return sum+(Number(x.buyEvent.price)||0)*x.shares;},0);
+    const matchedBuyFx=matchedBuyForeign?m.matches.reduce(function(sum,x){return sum+(Number(x.buyEvent.price)||0)*x.shares*x.buyFxRate;},0)/matchedBuyForeign:null;
+    const matchedPriceEffect=m.matches.reduce(function(sum,x){return sum+((Number(x.sellEvent.price)||0)-(Number(x.buyEvent.price)||0))*x.shares*x.buyFxRate;},0);
+    const matchedFxEffect=m.matches.reduce(function(sum,x){return sum+(Number(x.sellEvent.price)||0)*x.shares*(x.sellFxRate-x.buyFxRate);},0);
+    const details=m.matches.length?'<details class="offset-disclosure"><summary><span>沖銷配對明細</span><span>'+m.matches.length+' 筆，點擊展開</span></summary><div class="offset-list">'+m.matches.map(function(x){return renderOffsetMatch(group,x);}).join('')+'</div></details>':'';
+    return '<article class="trade-panel sale-card"><div class="sale-card-header"><div class="sale-stock-identity"><strong class="mono">'+escapeHtml(group.ticker)+'</strong><span>'+escapeHtml(group.stockName)+'</span></div><span class="trade-panel-total sale-unit-price">'+escapeHtml(t.currency)+' '+formatNum(t.price)+' / 股</span><span class="sale-event-meta">'+eventLabel(group,t)+' · '+formatDateTime(t.dateTime)+'</span><span class="sale-quantity">賣出股數 <strong>'+formatShares(t.shares)+' 股</strong></span></div>'+
+      '<div class="sale-overview-grid"><div class="sale-overview-cell"><span>買入匯率</span><strong>'+formatNum(matchedBuyFx,4)+'</strong></div>'+
+      '<div class="sale-overview-cell"><span>賣出匯率</span><strong>'+formatNum(t.fxRate,4)+'</strong></div><div class="sale-overview-cell"><span>賣出成本</span><strong>'+(m.matchedBasisTWD?formatTWD(m.matchedBasisTWD):'--')+'</strong></div><div class="sale-overview-cell"><span>賣出金額</span><strong>'+formatTWD(proceeds)+'</strong></div>'+
+      '<div class="sale-overview-cell"><span>股票損益</span><strong>'+(m.matchedShares?formatPnlWithPct(matchedPriceEffect,m.matchedBasisTWD):'--')+'</strong></div><div class="sale-overview-cell"><span>匯差損益</span><strong>'+(m.matchedShares?formatPnlWithPct(matchedFxEffect,m.matchedBasisTWD):'--')+'</strong></div><div class="sale-overview-cell pnl '+cls+'"><span>賣出損益</span><strong>'+(m.matchedShares?formatPnlWithPct(m.matchedPnlTWD,m.matchedBasisTWD):'--')+'</strong></div><div class="sale-overview-cell pnl '+cls+'"><span>報酬率</span><strong>'+(roi!==null?formatSignedPct(roi):'--')+'</strong></div></div>'+
+      (open>1e-8?'<div class="sale-open-note">尚有 '+formatShares(open)+' 股未回補；後續買入會依 FIFO 沖銷此筆。</div>':'')+details+
+      '<div class="sale-card-footer"><div><button class="btn-link" onclick="openEdit(\''+t.id+'\')">編輯</button><button class="btn-link btn-link-danger" onclick="deleteTrade(\''+t.id+'\')">刪除</button></div></div></article>';
+  }
+  function renderInventoryTable(groups) {
+    const lots=[];
+    groups.forEach(function(group){
+      group.trades.filter(function(t){return t.type==='buy';}).forEach(function(event){
+        const remaining=group.eventMetrics[event.id].remainingShares;
+        if(remaining>1e-8) lots.push({group:group,event:event,remaining:remaining,cost:remaining*(Number(event.price)||0)*(Number(event.fxRate)||0)});
+      });
+    });
+    lots.sort(function(a,b){return eventTime(b.event)-eventTime(a.event);});
+    const seen=Object.create(null);
+    const rows=lots.map(function(lot){
+      const group=lot.group,event=lot.event,showSell=!seen[group.key];seen[group.key]=true;
+      return '<tr><td><div class="inventory-stock-cell"><strong class="mono">'+escapeHtml(group.ticker)+'</strong><span>'+escapeHtml(group.stockName)+'</span></div></td><td>'+formatDate(event.dateTime)+'</td><td class="num-cell">'+formatNum(event.fxRate,4)+'</td><td class="num-cell">'+formatTWD(lot.cost)+'</td><td class="num-cell">'+formatShares(lot.remaining)+' 股</td><td>'+(showSell?'<button class="btn-link" data-action="record-sale" data-group-key="'+encodeURIComponent(group.key)+'">記錄賣出</button>':'')+'</td></tr>';
+    }).join('');
+    return '<div class="inventory-table-wrap"><table class="inventory-table"><thead><tr><th>股票代號／名稱</th><th>買入日期</th><th class="num-cell">買入匯率</th><th class="num-cell">持有成本</th><th class="num-cell">持有股數</th><th>操作</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   }
 
-  function renderTableRowHolding(t) {
-    const m = calcMetrics(t);
-    return '<tr onclick="openEdit(\'' + t.id + '\')">' +
-      tickerCell(t) +
-      '<td>' + formatDate(t.buyDateTime) + '</td>' +
-      '<td class="num-cell">' + formatNum(t.buyFxRate, 4) + '</td>' +
-      '<td class="num-cell">' + formatTWD(m.buyCostTWD) + '</td>' +
-    '</tr>';
-  }
 
-  function renderTableRowRealized(t) {
-    const m = calcMetrics(t);
-    const pnlClass = m.pnlTWD > 0 ? 'gain' : m.pnlTWD < 0 ? 'loss' : '';
-    return '<tr onclick="openEdit(\'' + t.id + '\')">' +
-      tickerCell(t) +
-      '<td>' + formatDate(t.buyDateTime) + '</td>' +
-      '<td class="num-cell">' + formatNum(t.buyFxRate, 4) + '</td>' +
-      '<td class="num-cell">' + formatNum(t.sellFxRate, 4) + '</td>' +
-      '<td class="num-cell">' + formatTWD(m.buyCostTWD) + '</td>' +
-      '<td class="num-cell">' + formatTWD(m.sellAmountTWD) + '</td>' +
-      '<td class="num-cell ' + pnlClass + '">' + formatSigned(m.pnlTWD) + '</td>' +
-      '<td class="num-cell ' + pnlClass + '">' + formatSignedPct(m.returnPct) + '</td>' +
-    '</tr>';
-  }
-
-  function renderCard(t) {
-    const m = calcMetrics(t);
-    const sold = m.isSold;
-    const pnlClass = sold ? (m.pnlTWD > 0 ? 'gain' : m.pnlTWD < 0 ? 'loss' : '') : '';
-    const priceEffectClass = sold ? (m.priceEffect > 0 ? 'gain' : m.priceEffect < 0 ? 'loss' : '') : '';
-    const fxEffectClass = sold ? (m.fxEffect > 0 ? 'gain' : m.fxEffect < 0 ? 'loss' : '') : '';
-
-    const sellLine = sold
-      ? '<div class="entry-line"><span class="entry-tag">賣出</span>' +
-        '<span class="num">' + formatDateTime(t.sellDateTime) + '</span>' +
-        '<span class="num">' + escapeHtml(t.currency) + ' ' + formatNum(t.sellPrice) + '</span>' +
-        '<span class="num">匯率 ' + formatNum(t.sellFxRate, 4) + '</span></div>'
-      : '';
-
-    const summaryBlock = sold
-      ? '<div class="entry-summary">' +
-          '<div class="sum-row"><span class="label">投入成本</span><span class="value">' + formatTWD(m.buyCostTWD) + '</span></div>' +
-          '<div class="sum-row"><span class="label">賣出金額</span><span class="value">' + formatTWD(m.sellAmountTWD) + '</span></div>' +
-          '<div class="sum-row pnl-row ' + pnlClass + '"><span class="label">損益</span><span class="value">' + formatSigned(m.pnlTWD) + ' <span class="pct">(' + formatSignedPct(m.returnPct) + ')</span></span></div>' +
-          '<div class="effect-row"><span class="' + priceEffectClass + '">股價貢獻　' + formatSigned(m.priceEffect) + '</span><span class="' + fxEffectClass + '">匯率貢獻　' + formatSigned(m.fxEffect) + '</span></div>' +
-        '</div>'
-      : '<div class="entry-summary"><div class="sum-row"><span class="label">投入成本</span><span class="value">' + formatTWD(m.buyCostTWD) + '</span></div></div>';
-
-    return '<div class="entry">' +
-      '<div class="entry-header">' +
-        '<div class="entry-title"><span class="stock-name">' + escapeHtml(t.stockName) + '</span><span class="ticker">' + escapeHtml(t.ticker) + '</span></div>' +
-        '<span class="status-tag"><span class="status-dot ' + (sold ? 'realized' : 'holding') + '"></span>' + (sold ? '賣出' : '持有中') + '</span>' +
-      '</div>' +
-      '<div class="entry-line"><span class="entry-tag">買入</span>' +
-        '<span class="num">' + formatDate(t.buyDateTime) + '</span>' +
-        '<span class="num">' + escapeHtml(t.currency) + ' ' + formatNum(t.buyPrice) + '</span>' +
-        '<span class="num">匯率 ' + formatNum(t.buyFxRate, 4) + '</span></div>' +
-      sellLine +
-      '<div class="entry-line"><span class="entry-tag">股數</span><span class="num">' + formatShares(t.shares) + '</span></div>' +
-      (t.notes ? '<div class="entry-line"><span class="entry-tag">備註</span><span>' + escapeHtml(t.notes) + '</span></div>' : '') +
-      summaryBlock +
-      '<div class="entry-actions">' +
-        '<button class="btn-link" onclick="openEdit(\'' + t.id + '\')">編輯</button>' +
-        '<button class="btn-link btn-link-danger" onclick="deleteTrade(\'' + t.id + '\')">刪除</button>' +
-      '</div>' +
-    '</div>';
-  }
-
-  /* ---------- modal ---------- */
-  function openModal() { document.getElementById('modal').style.display = 'flex'; }
+    /* ---------- modal ---------- */
+  function openModal() { document.getElementById('modal').style.display='flex'; }
   function closeModal() {
-    document.getElementById('modal').style.display = 'none';
-    document.getElementById('tradeForm').reset();
-    editingId = null;
+    document.getElementById('modal').style.display='none';document.getElementById('tradeForm').reset();editingId=null;setEventType('buy');
+  }
+
+    /* ---------- toast & confirm (replace native alert/confirm: unstylable,
+     and unreliable in standalone/home-screen mode on mobile Safari) ---------- */
+  function showToast(message, type) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'toast' + (type ? ' toast-' + type : '');
+    toast.textContent = message;
+    container.appendChild(toast);
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { toast.classList.add('show'); });
+    });
+    setTimeout(function() {
+      toast.classList.remove('show');
+      setTimeout(function() { toast.remove(); }, 250);
+    }, 3200);
+  }
+
+  function showConfirm(message, confirmLabel) {
+    return new Promise(function(resolve) {
+      const overlay = document.getElementById('confirmOverlay');
+      const okBtn = document.getElementById('confirmOkBtn');
+      const cancelBtn = document.getElementById('confirmCancelBtn');
+      document.getElementById('confirmMessage').textContent = message;
+      okBtn.textContent = confirmLabel || '確定';
+      overlay.style.display = 'flex';
+
+      function cleanup(result) {
+        overlay.style.display = 'none';
+        okBtn.removeEventListener('click', onOk);
+        cancelBtn.removeEventListener('click', onCancel);
+        overlay.removeEventListener('click', onOverlay);
+        resolve(result);
+      }
+      function onOk() { cleanup(true); }
+      function onCancel() { cleanup(false); }
+      function onOverlay(e) { if (e.target === overlay) cleanup(false); }
+      okBtn.addEventListener('click', onOk);
+      cancelBtn.addEventListener('click', onCancel);
+      overlay.addEventListener('click', onOverlay);
+    });
   }
 
   function openEdit(id) {
-    const t = trades.find(function(x) { return x.id === id; });
-    if (!t) return;
-    editingId = id;
-    document.getElementById('modalTitle').textContent = '編輯交易';
-    const form = document.getElementById('tradeForm');
-    form.stockName.value = t.stockName;
-    form.ticker.value = t.ticker;
-    form.currency.value = t.currency;
-    form.shares.value = t.shares;
-    form.buyDateTime.value = t.buyDateTime;
-    form.buyPrice.value = t.buyPrice;
-    form.buyFxRate.value = t.buyFxRate;
-    form.sellDateTime.value = t.sellDateTime || '';
-    form.sellPrice.value = (t.sellPrice !== null && t.sellPrice !== undefined) ? t.sellPrice : '';
-    form.sellFxRate.value = (t.sellFxRate !== null && t.sellFxRate !== undefined) ? t.sellFxRate : '';
-    form.notes.value = t.notes || '';
+    const t=trades.find(function(x){return x.id===id;});if(!t)return;
+    editingId=id;document.getElementById('modalTitle').textContent='編輯'+(t.type==='sell'?'賣出':'買入');
+    const form=document.getElementById('tradeForm');setEventType(t.type);
+    form.stockName.value=t.stockName;form.ticker.value=t.ticker;form.currency.value=t.currency;
+    form.shares.value=t.shares;form.dateTime.value=t.dateTime;form.price.value=t.price;form.fxRate.value=t.fxRate;form.notes.value=t.notes||'';
     openModal();
   }
 
-  function deleteTrade(id) {
-    if (!confirm('確定要刪除這筆交易紀錄嗎？此動作無法復原。')) return;
+    async function deleteTrade(id) {
+    const ok = await showConfirm('確定要刪除這筆交易紀錄嗎？此動作無法復原。', '刪除');
+    if (!ok) return;
     trades = trades.filter(function(t) { return t.id !== id; });
     saveTrades();
     render();
+    showToast('已刪除這筆交易', 'success');
   }
 
-  function clearAllData() {
-    if (!confirm('確定要清除「全部」交易紀錄嗎？此動作無法復原。')) return;
+  async function clearAllData() {
+    const ok = await showConfirm('確定要清除「全部」交易紀錄嗎？此動作無法復原。', '清除');
+    if (!ok) return;
     trades = [];
     try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
     render();
+    showToast('已清除全部紀錄', 'success');
   }
 
   function exportCSV() {
-    if (trades.length === 0) { alert('目前沒有交易紀錄可以匯出。'); return; }
-    const headers = ['股票名稱','股票代號','幣別','股數','買入日期','買入股價','買入匯率','賣出時間','賣出股價','賣出匯率','投入成本(TWD)','賣出金額(TWD)','損益(TWD)','報酬率(%)','備註'];
-    const rows = trades.map(function(t) {
-      const m = calcMetrics(t);
-      return [
-        t.stockName, t.ticker, t.currency, t.shares, t.buyDateTime, t.buyPrice, t.buyFxRate,
-        t.sellDateTime || '', t.sellPrice !== null && t.sellPrice !== undefined ? t.sellPrice : '',
-        t.sellFxRate !== null && t.sellFxRate !== undefined ? t.sellFxRate : '',
-        Math.round(m.buyCostTWD), m.sellAmountTWD !== null ? Math.round(m.sellAmountTWD) : '',
-        m.pnlTWD !== null ? Math.round(m.pnlTWD) : '', m.returnPct !== null ? m.returnPct.toFixed(2) : '',
-        t.notes || ''
-      ];
-    });
-    const csvContent = [headers].concat(rows).map(function(row) {
-      return row.map(function(v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
-    }).join('\r\n');
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    if(!trades.length){showToast('目前沒有交易紀錄可以匯出。');return;}
+    const headers=['股票名稱','股票代號','類型','交易編號','日期','股數','股價','匯率','幣別','沖銷對手','配對股數','買入日期','賣出日期','買入匯率','賣出匯率','配對損益(TWD)','備註'],rows=[];
+    groupTradesByStock(trades).forEach(function(g){g.trades.forEach(function(t){
+      const summary=g.eventMetrics[t.id],base=[t.stockName,t.ticker,t.type==='buy'?'買入':'賣出',eventLabel(g,t),t.dateTime,t.shares,t.price,t.fxRate,t.currency];
+      if(!summary.matches.length)rows.push(base.concat(['','','','','','','',t.notes||'']));
+      else summary.matches.forEach(function(x){const other=t.type==='buy'?x.sellEvent:x.buyEvent;rows.push(base.concat([eventLabel(g,other),x.shares,x.buyEvent.dateTime,x.sellEvent.dateTime,x.buyFxRate,x.sellFxRate,Math.round(x.pnlTWD),t.notes||'']));});
+    });});
+    const content=[headers].concat(rows).map(function(row){return row.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');
+    const blob=new Blob(['\uFEFF'+content],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download='股票交易紀錄_'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  }
+
+    function exportBackup() {
+    if (trades.length === 0) { showToast('目前沒有交易紀錄可以備份。'); return; }
+    const blob = new Blob([JSON.stringify(trades, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = '股票交易紀錄_' + new Date().toISOString().slice(0, 10) + '.csv';
+    a.download = '股票交易備份_' + new Date().toISOString().slice(0, 10) + '.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    showToast('已下載備份檔，建議存到雲端或 Files App 保管', 'success');
+  }
+
+  function importBackupFile(file) {
+    const reader=new FileReader();reader.onload=async function(){
+      let incoming;try{incoming=JSON.parse(reader.result);}catch(e){showToast('這個檔案不是有效的備份格式。','error');return;}
+      if(!Array.isArray(incoming)){showToast('這個檔案不是有效的備份格式。','error');return;}
+      const valid=normalizeTransactions(incoming).filter(isValidEvent);
+      if(!valid.length){showToast('備份檔裡沒有有效的交易紀錄。','error');return;}
+      const existing=Object.create(null);trades.forEach(function(t){existing[t.id]=true;});
+      const fresh=valid.filter(function(t){return !existing[t.id];}),skipped=valid.length-fresh.length;
+      const ok=await showConfirm('備份檔有 '+valid.length+' 筆買賣紀錄，其中 '+fresh.length+' 筆是新的'+(skipped?'，'+skipped+' 筆已存在會略過':'')+'。要還原新紀錄嗎？','還原');if(!ok)return;
+      trades=trades.concat(fresh);saveTrades();render();showToast('已還原 '+fresh.length+' 筆交易紀錄','success');
+    };reader.onerror=function(){showToast('讀取檔案時發生錯誤。','error');};reader.readAsText(file);
   }
 
   /* ---------- events ---------- */
-  document.getElementById('addBtn').addEventListener('click', function() {
-    editingId = null;
-    document.getElementById('modalTitle').textContent = '新增交易';
-    document.getElementById('tradeForm').reset();
-    applyNewTradeDefaults();
-    openModal();
+  document.getElementById('addBtn').addEventListener('click',function(){openNewTransaction('buy');});
+  document.getElementById('tradeList').addEventListener('click',function(e){
+    const button=e.target.closest&&e.target.closest('[data-action="record-sale"]');if(!button)return;
+    try{openNewTransaction('sell',decodeURIComponent(button.dataset.groupKey||''));}catch(error){showToast('無法開啟賣出表單，請重新整理後再試。','error');}
   });
-
-  document.getElementById('cancelBtn').addEventListener('click', closeModal);
-  document.getElementById('modal').addEventListener('click', function(e) {
-    if (e.target.id === 'modal') closeModal();
-  });
-
-  document.getElementById('exportBtn').addEventListener('click', exportCSV);
-  document.getElementById('clearBtn').addEventListener('click', clearAllData);
-
-  Array.prototype.forEach.call(document.querySelectorAll('.filter-tab'), function(btn) {
-    btn.addEventListener('click', function() {
-      Array.prototype.forEach.call(document.querySelectorAll('.filter-tab'), function(b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-      currentFilter = btn.dataset.filter;
-      renderList();
-    });
-  });
+  document.getElementById('cancelBtn').addEventListener('click',closeModal);
+  document.getElementById('modal').addEventListener('click',function(e){if(e.target.id==='modal')closeModal();});
+  document.getElementById('exportBtn').addEventListener('click',exportCSV);
+  document.getElementById('clearBtn').addEventListener('click',clearAllData);
+  document.getElementById('backupBtn').addEventListener('click',exportBackup);
+  document.getElementById('restoreBtn').addEventListener('click',function(){document.getElementById('restoreFileInput').click();});
+  document.getElementById('restoreFileInput').addEventListener('change',function(e){const file=e.target.files&&e.target.files[0];if(file)importBackupFile(file);e.target.value='';});
 
   Array.prototype.forEach.call(document.querySelectorAll('.view-tab'), function(btn) {
     btn.addEventListener('click', function() {
@@ -1128,60 +1305,29 @@
     });
   });
 
-  document.getElementById('tradeForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    const continueAdding = e.submitter && e.submitter.id === 'saveAddAnotherBtn';
-
-    const sellFieldsRaw = [fd.get('sellDateTime'), fd.get('sellPrice'), fd.get('sellFxRate')];
-    const sellFieldsProvided = sellFieldsRaw.filter(function(v) { return v !== null && v !== ''; }).length;
-    if (sellFieldsProvided > 0 && sellFieldsProvided < 3) {
-      alert('賣出日期、賣出股價、賣出匯率請完整填寫，或全部留空表示尚未賣出。');
-      return;
-    }
-
-    const trade = {
-      id: editingId || ('trade_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)),
-      stockName: (fd.get('stockName') || '').trim(),
-      ticker: (fd.get('ticker') || '').trim().toUpperCase(),
-      currency: ((fd.get('currency') || '').trim() || 'USD').toUpperCase(),
-      shares: parseFloat(fd.get('shares')),
-      buyDateTime: fd.get('buyDateTime'),
-      buyPrice: parseFloat(fd.get('buyPrice')),
-      buyFxRate: parseFloat(fd.get('buyFxRate')),
-      sellDateTime: fd.get('sellDateTime') || null,
-      sellPrice: fd.get('sellPrice') ? parseFloat(fd.get('sellPrice')) : null,
-      sellFxRate: fd.get('sellFxRate') ? parseFloat(fd.get('sellFxRate')) : null,
-      notes: (fd.get('notes') || '').trim()
-    };
-
-    if (!trade.stockName || !trade.ticker || isNaN(trade.shares) || !trade.buyDateTime || isNaN(trade.buyPrice) || isNaN(trade.buyFxRate)) {
-      alert('請完整填寫買入資訊的所有必填欄位。');
-      return;
-    }
-
-    if (editingId) {
-      const idx = trades.findIndex(function(t) { return t.id === editingId; });
-      if (idx !== -1) trades[idx] = trade;
+  document.getElementById('tableHeadRow').addEventListener('click', function(e) {
+    const th = e.target.closest('th[data-sort]');
+    if (!th) return;
+    const key = th.dataset.sort;
+    if (sortState.key === key) {
+      sortState.dir *= -1;
     } else {
-      trades.push(trade);
+      sortState = { key: key, dir: 1 };
     }
-
-    saveTrades();
-    render();
-
-    if (continueAdding) {
-      editingId = null;
-      document.getElementById('modalTitle').textContent = '新增交易';
-      document.getElementById('tradeForm').reset();
-      applyNewTradeDefaults();
-      document.querySelector('[name="stockName"]').focus();
-    } else {
-      closeModal();
-    }
+    renderList();
   });
 
-  document.getElementById('searchInput').addEventListener('input', function(e) {
+  document.getElementById('tradeForm').addEventListener('submit',function(e){
+    e.preventDefault();const fd=new FormData(e.target),again=e.submitter&&e.submitter.id==='saveAddAnotherBtn';
+    const event={id:editingId||makeTradeId(),type:fd.get('eventType'),stockName:(fd.get('stockName')||'').trim(),ticker:(fd.get('ticker')||'').trim().toUpperCase(),
+      currency:((fd.get('currency')||'').trim()||'USD').toUpperCase(),shares:parseFloat(fd.get('shares')),dateTime:fd.get('dateTime'),price:parseFloat(fd.get('price')),fxRate:parseFloat(fd.get('fxRate')),notes:(fd.get('notes')||'').trim()};
+    if(!isValidEvent(event)){showToast('請完整填寫股票、股數、日期、股價與匯率。','error');return;}
+    if(editingId){const index=trades.findIndex(function(t){return t.id===editingId;});if(index>=0)trades[index]=event;}else trades.push(event);
+    saveTrades();render();
+    if(again){const stock=event.stockName,ticker=event.ticker,currency=event.currency;openNewTransaction(event.type);const form=document.getElementById('tradeForm');form.stockName.value=stock;form.ticker.value=ticker;form.currency.value=currency;form.stockName.focus();}else closeModal();
+  });
+
+    document.getElementById('searchInput').addEventListener('input', function(e) {
     searchQuery = e.target.value.trim().toLowerCase();
     renderList();
   });
