@@ -1255,18 +1255,39 @@
     a.href=url;a.download='股票交易紀錄_'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
   }
 
-    function exportBackup() {
+  async function exportBackup() {
     if (trades.length === 0) { showToast('目前沒有交易紀錄可以備份。'); return; }
-    const blob = new Blob([JSON.stringify(trades, null, 2)], { type: 'application/json' });
+    const filename = '股票交易備份_' + new Date().toISOString().slice(0, 10) + '.json';
+    const content = JSON.stringify(trades, null, 2);
+
+    if (typeof window.showSaveFilePicker === 'function') {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{ description: 'JSON 備份檔', accept: { 'application/json': ['.json'] } }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        showToast('備份已儲存到你選擇的位置。', 'success');
+        return;
+      } catch (error) {
+        if (error && error.name === 'AbortError') return;
+      }
+    }
+
+    const blob = new Blob([content], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = '股票交易備份_' + new Date().toISOString().slice(0, 10) + '.json';
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast('已下載備份檔，建議存到雲端或 Files App 保管', 'success');
+    setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+    showToast(typeof window.showSaveFilePicker === 'function'
+      ? '無法開啟儲存視窗，已改用瀏覽器下載。'
+      : '此瀏覽器不支援選擇存放位置，已用瀏覽器下載。', 'success');
   }
 
   function importBackupFile(file) {
