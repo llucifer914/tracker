@@ -188,6 +188,32 @@
   .inventory-table .num-cell { text-align:right; font-variant-numeric:tabular-nums; }
   .inventory-table .inventory-note { min-width:130px; max-width:220px; white-space:normal; overflow-wrap:anywhere; color:var(--ink-soft); }
   .inventory-table .inventory-actions { display:flex; align-items:center; gap:8px; }
+  .pnl-chart { display:grid; gap:0; padding:16px 18px; border:1px solid var(--rule-strong); border-radius:var(--radius-md); background:var(--panel); }
+  .pnl-chart-summary { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; padding-bottom:14px; border-bottom:1px solid var(--rule); }
+  .pnl-chart-summary-main { display:grid; gap:2px; }
+  .pnl-chart-summary-label, .pnl-chart-caption { color:var(--ink-soft); font-size:12px; }
+  .pnl-chart-summary-value { font-size:20px; font-weight:750; font-variant-numeric:tabular-nums; }
+  .pnl-chart-summary-value.gain, .pnl-chart-value.gain { color:var(--gain); }
+  .pnl-chart-summary-value.loss, .pnl-chart-value.loss { color:var(--loss); }
+  .pnl-chart-axis, .pnl-chart-row { display:grid; grid-template-columns:minmax(110px,1fr) minmax(120px,2fr) minmax(105px,auto); align-items:center; gap:12px; }
+  .pnl-chart-axis { padding:12px 0 7px; color:var(--ink-soft); font-size:11px; }
+  .pnl-chart-scale { display:flex; justify-content:space-between; }
+  .pnl-chart-axis-value { text-align:right; }
+  .pnl-chart-row { min-height:54px; border-top:1px solid var(--rule); }
+  .pnl-chart-stock { display:grid; gap:2px; min-width:0; }
+  .pnl-chart-stock strong { color:var(--ink); font-size:12px; }
+  .pnl-chart-stock span { color:var(--ink-soft); font-size:11px; overflow-wrap:anywhere; }
+  .pnl-chart-track { position:relative; height:18px; border-radius:4px; background:rgba(255,255,255,0.035); }
+  .pnl-chart-zero { position:absolute; z-index:1; top:-3px; bottom:-3px; left:50%; border-left:1px solid var(--rule-strong); }
+  .pnl-chart-bar { position:absolute; top:3px; bottom:3px; min-width:2px; border-radius:3px; }
+  .pnl-chart-bar.gain { background:var(--gain); }
+  .pnl-chart-bar.loss { background:var(--loss); }
+  .pnl-chart-value { text-align:right; font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  @media (max-width:560px) {
+    .pnl-chart { padding:13px 12px; }
+    .pnl-chart-axis, .pnl-chart-row { grid-template-columns:minmax(78px,.9fr) minmax(90px,1.2fr) minmax(88px,auto); gap:7px; }
+    .pnl-chart-value { font-size:11px; }
+  }
   .sale-card-header { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:4px 12px; margin-bottom:7px; }
   .sale-stock-identity { grid-column:1; grid-row:1; display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 9px; margin:0; }
   .sale-stock-identity strong { color:var(--accent); font-size:12px; }
@@ -685,6 +711,7 @@
       <div class="view-toggle">
         <button class="view-tab active" data-view="details">明細</button>
         <button class="view-tab" data-view="inventory">庫存</button>
+        <button class="view-tab" data-view="pnl">損益圖表</button>
       </div>
     </div>
     <div class="toolbar-actions">
@@ -1043,19 +1070,20 @@
     const emptyEl = document.getElementById('emptyState');
     const panelEl = document.getElementById('ledgerPanel');
     const tableWrapEl = document.getElementById('tableWrap');
-    const hasVisibleRows=currentView==='inventory'?groups.some(function(g){return g.metrics.remainingShares>1e-8;}):groups.some(function(g){return g.trades.some(function(t){return t.type==='sell';});});
+    const hasVisibleRows=currentView==='inventory'?groups.some(function(g){return g.metrics.remainingShares>1e-8;}):currentView==='pnl'?groups.some(function(g){return g.metrics.realizedBasisTWD>0;}):groups.some(function(g){return g.trades.some(function(t){return t.type==='sell';});});
     if (!hasVisibleRows) {
       listEl.innerHTML = '';
       document.getElementById('tradeTableBody').innerHTML = '';
       panelEl.style.display = 'none'; tableWrapEl.style.display = 'none'; emptyEl.style.display = 'block';
       emptyEl.textContent = trades.length === 0 ? '尚無買賣紀錄，點擊「+ 新增交易」開始記帳' :
-        (searchQuery ? '沒有符合搜尋的紀錄' : (currentView === 'inventory' ? '目前沒有庫存' : '目前沒有賣出明細'));
+        (searchQuery ? '沒有符合搜尋的紀錄' : (currentView === 'inventory' ? '目前沒有庫存' : currentView === 'pnl' ? '目前沒有已實現損益可供統計' : '目前沒有賣出明細'));
       return;
     }
     emptyEl.style.display = 'none';
     tableWrapEl.style.display = 'none';
     panelEl.style.display = '';
     if(currentView==='inventory') listEl.innerHTML=renderInventoryTable(groups);
+    else if(currentView==='pnl') listEl.innerHTML=renderPnlChart(groups);
     else {
       const sales=[];groups.forEach(function(g){g.trades.filter(function(t){return t.type==='sell';}).forEach(function(t){sales.push({group:g,event:t});});});
       sales.sort(function(a,b){return eventTime(b.event)-eventTime(a.event);});
@@ -1169,6 +1197,27 @@
       return '<tr><td><div class="inventory-stock-cell"><strong class="mono">'+escapeHtml(group.ticker)+'</strong><span>'+escapeHtml(group.stockName)+'</span></div></td><td>'+formatDate(event.dateTime)+'</td><td class="num-cell">'+formatNum(event.fxRate,4)+'</td><td class="num-cell">'+formatTWD(lot.cost)+'</td><td class="num-cell">'+formatShares(lot.remaining)+' 股</td><td class="inventory-note">'+(event.notes?escapeHtml(event.notes):'--')+'</td><td><div class="inventory-actions"><button class="btn-link" data-action="edit-trade" data-trade-id="'+escapeHtml(event.id)+'">修改</button>'+(showSell?'<button class="btn-link" data-action="record-sale" data-group-key="'+encodeURIComponent(group.key)+'">記錄賣出</button>':'')+'</div></td></tr>';
     }).join('');
     return '<div class="inventory-table-wrap"><table class="inventory-table"><thead><tr><th>股票代號／名稱</th><th>買入日期</th><th class="num-cell">買入匯率</th><th class="num-cell">持有成本</th><th class="num-cell">持有股數</th><th>備註</th><th>操作</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }
+
+  function renderPnlChart(groups) {
+    const byStock=Object.create(null);
+    groups.forEach(function(group){
+      const ticker=String(group.ticker||'').trim().toUpperCase(),identity=ticker||String(group.stockName||'').trim().toLowerCase();
+      if(!byStock[identity])byStock[identity]={ticker:ticker,stockName:group.stockName,realizedBasisTWD:0,pnlTWD:0,soldShares:0};
+      byStock[identity].realizedBasisTWD+=group.metrics.realizedBasisTWD;
+      byStock[identity].pnlTWD+=group.metrics.pnlTWD;
+      byStock[identity].soldShares+=group.metrics.soldShares;
+    });
+    const realized=Object.keys(byStock).map(function(key){return byStock[key];}).filter(function(stock){return stock.realizedBasisTWD>0;}).sort(function(a,b){return b.pnlTWD-a.pnlTWD;});
+    const total=realized.reduce(function(sum,stock){return sum+stock.pnlTWD;},0);
+    const maxAbs=Math.max.apply(null,realized.map(function(stock){return Math.abs(stock.pnlTWD);}).concat([1]));
+    const rows=realized.map(function(group){
+      const pnl=group.pnlTWD,cls=pnl>0?'gain':pnl<0?'loss':'',width=Math.abs(pnl)/maxAbs*47,left=pnl<0?50-width:50;
+      const bar=pnl===0?'':'<span class="pnl-chart-bar '+cls+'" style="left:'+left.toFixed(2)+'%;width:'+width.toFixed(2)+'%" aria-hidden="true"></span>';
+      return '<div class="pnl-chart-row"><div class="pnl-chart-stock"><strong class="mono">'+escapeHtml(group.ticker)+'</strong><span>'+escapeHtml(group.stockName)+' · 已賣出 '+formatShares(group.soldShares)+' 股</span></div><div class="pnl-chart-track" role="img" aria-label="'+escapeHtml(group.stockName)+' 已實現損益 '+escapeHtml(formatSigned(pnl))+'"><span class="pnl-chart-zero" aria-hidden="true"></span>'+bar+'</div><strong class="pnl-chart-value '+cls+'">'+formatSigned(pnl)+'</strong></div>';
+    }).join('');
+    const totalClass=total>0?'gain':total<0?'loss':'';
+    return '<section class="pnl-chart" aria-label="各股票已實現損益圖表"><div class="pnl-chart-summary"><div class="pnl-chart-summary-main"><span class="pnl-chart-summary-label">已實現總損益</span><strong class="pnl-chart-summary-value '+totalClass+'">'+formatSigned(total)+'</strong></div><span class="pnl-chart-caption">'+realized.length+' 檔股票 · 金額為新台幣</span></div><div class="pnl-chart-axis"><span>股票</span><div class="pnl-chart-scale"><span>虧損</span><span>0</span><span>獲利</span></div><span class="pnl-chart-axis-value">已實現損益</span></div>'+rows+'</section>';
   }
 
 
