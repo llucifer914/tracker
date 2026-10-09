@@ -178,7 +178,7 @@
   .inventory-cell-label { color:var(--ink-soft); font-size:11px; }
   .inventory-cell-value { color:var(--ink); font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
   .inventory-table-wrap { width:100%; overflow-x:auto; border:1px solid var(--rule-strong); border-radius:var(--radius-md); background:var(--panel); }
-  .inventory-table { width:100%; min-width:760px; border-collapse:collapse; font-size:12px; }
+  .inventory-table { width:100%; min-width:900px; border-collapse:collapse; font-size:12px; }
   .inventory-table th, .inventory-table td { padding:11px 13px; border-bottom:1px solid var(--rule); text-align:left; white-space:nowrap; }
   .inventory-table th { color:var(--ink-soft); font-size:11px; font-weight:600; }
   .inventory-table tr:last-child td { border-bottom:none; }
@@ -186,6 +186,8 @@
   .inventory-stock-cell strong { color:var(--ink); font-size:12px; }
   .inventory-stock-cell span { color:var(--ink-soft); font-size:11px; }
   .inventory-table .num-cell { text-align:right; font-variant-numeric:tabular-nums; }
+  .inventory-table .inventory-note { min-width:130px; max-width:220px; white-space:normal; overflow-wrap:anywhere; color:var(--ink-soft); }
+  .inventory-table .inventory-actions { display:flex; align-items:center; gap:8px; }
   .sale-card-header { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:4px 12px; margin-bottom:7px; }
   .sale-stock-identity { grid-column:1; grid-row:1; display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 9px; margin:0; }
   .sale-stock-identity strong { color:var(--accent); font-size:12px; }
@@ -194,7 +196,7 @@
   .sale-event-meta { grid-column:1; grid-row:2; color:var(--ink-soft); font-size:12px; }
   .sale-quantity { grid-column:2; grid-row:2; justify-self:end; color:var(--ink-soft); font-size:12px; white-space:nowrap; }
   .sale-quantity strong { color:var(--ink); font-size:14px; font-variant-numeric:tabular-nums; }
-  @media (max-width:480px) { .inventory-table { min-width:730px; } }
+  @media (max-width:480px) { .inventory-table { min-width:850px; } }
 
 
   /* ---------- Toolbar ---------- */
@@ -758,6 +760,10 @@
 
   /* ---------- helpers and transaction migration ---------- */
   function makeTradeId() { return 'trade_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+  function stockIdentityKey(t) {
+    const ticker=String(t.ticker||'').trim().toUpperCase(), identity=ticker||String(t.stockName||'').trim().toLowerCase();
+    return identity+'::'+String(t.currency||'').trim().toUpperCase();
+  }
   function eventTime(t) {
     const value=String(t.dateTime||''), normalized=/^\d{4}-\d{2}-\d{2}$/.test(value)?value+'T00:00:00':value;
     const time=new Date(normalized).getTime(); return isNaN(time)?0:time;
@@ -976,8 +982,7 @@
   function groupTradesByStock(records) {
     const buckets=Object.create(null);
     records.forEach(function(t) {
-      const ticker=String(t.ticker||'').trim().toUpperCase(), identity=ticker||String(t.stockName||'').trim().toLowerCase();
-      const key=identity+'::'+String(t.currency||'').trim().toUpperCase();
+      const ticker=String(t.ticker||'').trim().toUpperCase(), key=stockIdentityKey(t);
       if(!buckets[key]) buckets[key]={key:key,ticker:ticker,stockName:t.stockName,currency:t.currency,trades:[]};
       buckets[key].trades.push(t);
     });
@@ -1161,9 +1166,9 @@
     const seen=Object.create(null);
     const rows=lots.map(function(lot){
       const group=lot.group,event=lot.event,showSell=!seen[group.key];seen[group.key]=true;
-      return '<tr><td><div class="inventory-stock-cell"><strong class="mono">'+escapeHtml(group.ticker)+'</strong><span>'+escapeHtml(group.stockName)+'</span></div></td><td>'+formatDate(event.dateTime)+'</td><td class="num-cell">'+formatNum(event.fxRate,4)+'</td><td class="num-cell">'+formatTWD(lot.cost)+'</td><td class="num-cell">'+formatShares(lot.remaining)+' 股</td><td>'+(showSell?'<button class="btn-link" data-action="record-sale" data-group-key="'+encodeURIComponent(group.key)+'">記錄賣出</button>':'')+'</td></tr>';
+      return '<tr><td><div class="inventory-stock-cell"><strong class="mono">'+escapeHtml(group.ticker)+'</strong><span>'+escapeHtml(group.stockName)+'</span></div></td><td>'+formatDate(event.dateTime)+'</td><td class="num-cell">'+formatNum(event.fxRate,4)+'</td><td class="num-cell">'+formatTWD(lot.cost)+'</td><td class="num-cell">'+formatShares(lot.remaining)+' 股</td><td class="inventory-note">'+(event.notes?escapeHtml(event.notes):'--')+'</td><td><div class="inventory-actions"><button class="btn-link" data-action="edit-trade" data-trade-id="'+escapeHtml(event.id)+'">修改</button>'+(showSell?'<button class="btn-link" data-action="record-sale" data-group-key="'+encodeURIComponent(group.key)+'">記錄賣出</button>':'')+'</div></td></tr>';
     }).join('');
-    return '<div class="inventory-table-wrap"><table class="inventory-table"><thead><tr><th>股票代號／名稱</th><th>買入日期</th><th class="num-cell">買入匯率</th><th class="num-cell">持有成本</th><th class="num-cell">持有股數</th><th>操作</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    return '<div class="inventory-table-wrap"><table class="inventory-table"><thead><tr><th>股票代號／名稱</th><th>買入日期</th><th class="num-cell">買入匯率</th><th class="num-cell">持有成本</th><th class="num-cell">持有股數</th><th>備註</th><th>操作</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   }
 
 
@@ -1306,6 +1311,8 @@
   /* ---------- events ---------- */
   document.getElementById('addBtn').addEventListener('click',function(){openNewTransaction('buy');});
   document.getElementById('tradeList').addEventListener('click',function(e){
+    const editButton=e.target.closest&&e.target.closest('[data-action="edit-trade"]');
+    if(editButton){openEdit(editButton.dataset.tradeId);return;}
     const button=e.target.closest&&e.target.closest('[data-action="record-sale"]');if(!button)return;
     try{openNewTransaction('sell',decodeURIComponent(button.dataset.groupKey||''));}catch(error){showToast('無法開啟賣出表單，請重新整理後再試。','error');}
   });
@@ -1343,7 +1350,7 @@
     const event={id:editingId||makeTradeId(),type:fd.get('eventType'),stockName:(fd.get('stockName')||'').trim(),ticker:(fd.get('ticker')||'').trim().toUpperCase(),
       currency:((fd.get('currency')||'').trim()||'USD').toUpperCase(),shares:parseFloat(fd.get('shares')),dateTime:fd.get('dateTime'),price:parseFloat(fd.get('price')),fxRate:parseFloat(fd.get('fxRate')),notes:(fd.get('notes')||'').trim()};
     if(!isValidEvent(event)){showToast('請完整填寫股票、股數、日期、股價與匯率。','error');return;}
-    if(editingId){const index=trades.findIndex(function(t){return t.id===editingId;});if(index>=0)trades[index]=event;}else trades.push(event);
+    if(editingId){const index=trades.findIndex(function(t){return t.id===editingId;});if(index>=0){const oldKey=stockIdentityKey(trades[index]);trades.forEach(function(t){if(stockIdentityKey(t)===oldKey){t.stockName=event.stockName;t.ticker=event.ticker;t.currency=event.currency;}});trades[index]=event;}}else trades.push(event);
     saveTrades();render();
     if(again){const stock=event.stockName,ticker=event.ticker,currency=event.currency;openNewTransaction(event.type);const form=document.getElementById('tradeForm');form.stockName.value=stock;form.ticker.value=ticker;form.currency.value=currency;form.stockName.focus();}else closeModal();
   });
