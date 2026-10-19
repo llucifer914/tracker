@@ -178,10 +178,20 @@
   .inventory-cell-label { color:var(--ink-soft); font-size:11px; }
   .inventory-cell-value { color:var(--ink); font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
   .inventory-table-wrap { width:100%; overflow-x:auto; border:1px solid var(--rule-strong); border-radius:var(--radius-md); background:var(--panel); }
-  .inventory-table { width:100%; min-width:1080px; border-collapse:collapse; font-size:12px; }
+  .inventory-table { width:100%; min-width:990px; border-collapse:collapse; font-size:12px; }
   .inventory-table th, .inventory-table td { padding:11px 13px; border-bottom:1px solid var(--rule); text-align:left; white-space:nowrap; }
   .inventory-table th { color:var(--ink-soft); font-size:11px; font-weight:600; }
   .inventory-table tr:last-child td { border-bottom:none; }
+  .inventory-table tr[hidden] { display:none; }
+  .inventory-group + .inventory-group tr.inventory-head td { border-top:2px solid var(--rule-strong); }
+  .inventory-head { cursor:pointer; }
+  .inventory-head td { background:rgba(255,255,255,0.03); }
+  .inventory-head:hover td { background:rgba(255,255,255,0.06); }
+  .inventory-head:focus-visible { outline:2px solid var(--ink); outline-offset:-2px; }
+  .inventory-head-cell { display:flex; align-items:center; gap:8px; }
+  .inventory-chevron { display:inline-block; font-size:11px; color:var(--ink-soft); transition:transform 0.12s; }
+  .inventory-head.open .inventory-chevron { transform:rotate(90deg); }
+  .inventory-avg-label { color:var(--ink-faint); font-size:11px; margin-right:2px; }
   .inventory-stock-cell { display:flex; flex-direction:column; gap:2px; }
   .inventory-stock-cell strong { color:var(--ink); font-size:12px; }
   .inventory-stock-cell span { color:var(--ink-soft); font-size:11px; }
@@ -222,7 +232,7 @@
   .sale-event-meta { grid-column:1; grid-row:2; color:var(--ink-soft); font-size:12px; }
   .sale-quantity { grid-column:2; grid-row:2; justify-self:end; color:var(--ink-soft); font-size:12px; white-space:nowrap; }
   .sale-quantity strong { color:var(--ink); font-size:14px; font-variant-numeric:tabular-nums; }
-  @media (max-width:480px) { .inventory-table { min-width:1030px; } }
+  @media (max-width:480px) { .inventory-table { min-width:940px; } }
 
 
   /* ---------- Toolbar ---------- */
@@ -1182,23 +1192,49 @@
       (open>1e-8?'<div class="sale-open-note">尚有 '+formatShares(open)+' 股未回補；後續買入會依 FIFO 沖銷此筆。</div>':'')+details+
       '<div class="sale-card-footer"><div><button class="btn-link" onclick="openEdit(\''+t.id+'\')">編輯</button><button class="btn-link btn-link-danger" onclick="deleteTrade(\''+t.id+'\')">刪除</button></div></div></article>';
   }
-  function renderInventoryTable(groups) {
-    const lots=[];
-    groups.forEach(function(group){
-      group.trades.filter(function(t){return t.type==='buy';}).forEach(function(event){
-        const remaining=group.eventMetrics[event.id].remainingShares;
-        if(remaining>1e-8) lots.push({group:group,event:event,remaining:remaining,cost:remaining*(Number(event.price)||0)*(Number(event.fxRate)||0)});
-      });
+  const inventoryOpen = Object.create(null);
+  function toggleInventoryGroup(encKey) {
+    const open = !inventoryOpen[encKey];
+    if (open) inventoryOpen[encKey] = true; else delete inventoryOpen[encKey];
+    const list = document.getElementById('tradeList');
+    Array.prototype.forEach.call(list.querySelectorAll('tr[data-lot-of]'), function(tr) {
+      if (tr.dataset.lotOf === encKey) tr.hidden = !open;
     });
-    lots.sort(function(a,b){return eventTime(b.event)-eventTime(a.event);});
-    const avg=Object.create(null);
-    lots.forEach(function(l){const k=l.group.key;if(!avg[k])avg[k]={sh:0,amt:0,cur:l.event.currency};avg[k].sh+=l.remaining;avg[k].amt+=l.remaining*(Number(l.event.price)||0);});
-    const seen=Object.create(null);
-    const rows=lots.map(function(lot){
-      const group=lot.group,event=lot.event,showSell=!seen[group.key];seen[group.key]=true;
-      return '<tr><td><div class="inventory-stock-cell"><strong class="mono">'+escapeHtml(group.ticker)+'</strong><span>'+escapeHtml(group.stockName)+'</span></div></td><td>'+formatDate(event.dateTime)+'</td><td class="num-cell">'+escapeHtml(event.currency)+' '+formatNum(event.price)+'</td><td class="num-cell">'+escapeHtml(avg[group.key].cur)+' '+formatNum(avg[group.key].amt/avg[group.key].sh)+'</td><td class="num-cell">'+formatNum(event.fxRate,4)+'</td><td class="num-cell">'+formatTWD(lot.cost)+'</td><td class="num-cell">'+formatShares(lot.remaining)+' 股</td><td class="inventory-note">'+(event.notes?escapeHtml(event.notes):'--')+'</td><td><div class="inventory-actions"><button class="btn-link" data-action="edit-trade" data-trade-id="'+escapeHtml(event.id)+'">修改</button>'+(showSell?'<button class="btn-link" data-action="record-sale" data-group-key="'+encodeURIComponent(group.key)+'">記錄賣出</button>':'')+'</div></td></tr>';
+    Array.prototype.forEach.call(list.querySelectorAll('tr[data-action="toggle-stock"]'), function(tr) {
+      if (tr.dataset.groupKey === encKey) { tr.classList.toggle('open', open); tr.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+    });
+  }
+  function renderInventoryTable(groups) {
+    const stocks = [];
+    groups.forEach(function(group) {
+      const lots = [];
+      group.trades.filter(function(t){return t.type==='buy';}).forEach(function(event) {
+        const remaining = group.eventMetrics[event.id].remainingShares;
+        if (remaining > 1e-8) lots.push({ event:event, remaining:remaining, price:Number(event.price)||0, fx:Number(event.fxRate)||0 });
+      });
+      if (!lots.length) return;
+      lots.sort(function(a,b){ return eventTime(a.event)-eventTime(b.event); });
+      let shares=0, foreign=0, twd=0;
+      lots.forEach(function(l){ l.cost=l.remaining*l.price*l.fx; shares+=l.remaining; foreign+=l.remaining*l.price; twd+=l.cost; });
+      stocks.push({ group:group, lots:lots, shares:shares, cost:twd, avgPrice:foreign/shares, newest:eventTime(lots[lots.length-1].event), currency:lots[0].event.currency });
+    });
+    stocks.sort(function(a,b){ return (b.newest-a.newest) || (a.group.key<b.group.key?-1:1); });
+    const body = stocks.map(function(st) {
+      const g=st.group, enc=encodeURIComponent(g.key), open=!!inventoryOpen[enc];
+      const head='<tr class="inventory-head'+(open?' open':'')+'" data-action="toggle-stock" data-group-key="'+enc+'" role="button" tabindex="0" aria-expanded="'+(open?'true':'false')+'">'+
+        '<td><div class="inventory-head-cell"><span class="inventory-chevron" aria-hidden="true">▸</span><div class="inventory-stock-cell"><strong class="mono">'+escapeHtml(g.ticker)+'</strong><span>'+escapeHtml(g.stockName)+'</span></div></div></td>'+
+        '<td>共 '+st.lots.length+' 筆</td>'+
+        '<td class="num-cell"><span class="inventory-avg-label">均價</span> '+escapeHtml(st.currency)+' '+formatNum(st.avgPrice)+'</td>'+
+        '<td></td>'+
+        '<td class="num-cell">'+formatTWD(st.cost)+'</td><td class="num-cell">'+formatShares(st.shares)+' 股</td><td></td>'+
+        '<td><div class="inventory-actions"><button class="btn-link" data-action="record-sale" data-group-key="'+enc+'">記錄賣出</button></div></td></tr>';
+      const rows=st.lots.map(function(lot) {
+        const e=lot.event;
+        return '<tr class="inventory-lot" data-lot-of="'+enc+'"'+(open?'':' hidden')+'><td></td><td>'+formatDate(e.dateTime)+'</td><td class="num-cell">'+escapeHtml(e.currency)+' '+formatNum(e.price)+'</td><td class="num-cell">'+formatNum(e.fxRate,4)+'</td><td class="num-cell">'+formatTWD(lot.cost)+'</td><td class="num-cell">'+formatShares(lot.remaining)+' 股</td><td class="inventory-note">'+(e.notes?escapeHtml(e.notes):'--')+'</td><td><div class="inventory-actions"><button class="btn-link" data-action="edit-trade" data-trade-id="'+escapeHtml(e.id)+'">修改</button></div></td></tr>';
+      }).join('');
+      return '<tbody class="inventory-group">'+head+rows+'</tbody>';
     }).join('');
-    return '<div class="inventory-table-wrap"><table class="inventory-table"><thead><tr><th>股票代號／名稱</th><th>買入日期</th><th class="num-cell">買入股價</th><th class="num-cell">平均買入股價</th><th class="num-cell">買入匯率</th><th class="num-cell">持有成本</th><th class="num-cell">持有股數</th><th>備註</th><th>操作</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    return '<div class="inventory-table-wrap"><table class="inventory-table"><thead><tr><th>股票代號／名稱</th><th>買入日期</th><th class="num-cell">買入股價</th><th class="num-cell">買入匯率</th><th class="num-cell">持有成本</th><th class="num-cell">持有股數</th><th>備註</th><th>操作</th></tr></thead>'+body+'</table></div>';
   }
 
   function renderPnlChart(groups) {
@@ -1364,8 +1400,14 @@
   document.getElementById('tradeList').addEventListener('click',function(e){
     const editButton=e.target.closest&&e.target.closest('[data-action="edit-trade"]');
     if(editButton){openEdit(editButton.dataset.tradeId);return;}
-    const button=e.target.closest&&e.target.closest('[data-action="record-sale"]');if(!button)return;
+    const button=e.target.closest&&e.target.closest('[data-action="record-sale"]');if(!button){const head=e.target.closest&&e.target.closest('[data-action="toggle-stock"]');if(head)toggleInventoryGroup(head.dataset.groupKey);return;}
     try{openNewTransaction('sell',decodeURIComponent(button.dataset.groupKey||''));}catch(error){showToast('無法開啟賣出表單，請重新整理後再試。','error');}
+  });
+  document.getElementById('tradeList').addEventListener('keydown',function(e){
+    if(e.key!=='Enter'&&e.key!==' ')return;
+    const head=e.target.closest&&e.target.closest('[data-action="toggle-stock"]');
+    if(!head||e.target!==head)return;
+    e.preventDefault();toggleInventoryGroup(head.dataset.groupKey);
   });
   document.getElementById('cancelBtn').addEventListener('click',closeModal);
   document.getElementById('modal').addEventListener('click',function(e){if(e.target.id==='modal')closeModal();});
