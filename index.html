@@ -178,7 +178,7 @@
   .inventory-cell-label { color:var(--ink-soft); font-size:11px; }
   .inventory-cell-value { color:var(--ink); font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
   .inventory-table-wrap { width:100%; overflow-x:auto; border:1px solid var(--rule-strong); border-radius:var(--radius-md); background:var(--panel); }
-  .inventory-table { width:100%; min-width:900px; border-collapse:collapse; font-size:12px; }
+  .inventory-table { width:100%; min-width:1080px; border-collapse:collapse; font-size:12px; }
   .inventory-table th, .inventory-table td { padding:11px 13px; border-bottom:1px solid var(--rule); text-align:left; white-space:nowrap; }
   .inventory-table th { color:var(--ink-soft); font-size:11px; font-weight:600; }
   .inventory-table tr:last-child td { border-bottom:none; }
@@ -222,7 +222,7 @@
   .sale-event-meta { grid-column:1; grid-row:2; color:var(--ink-soft); font-size:12px; }
   .sale-quantity { grid-column:2; grid-row:2; justify-self:end; color:var(--ink-soft); font-size:12px; white-space:nowrap; }
   .sale-quantity strong { color:var(--ink); font-size:14px; font-variant-numeric:tabular-nums; }
-  @media (max-width:480px) { .inventory-table { min-width:850px; } }
+  @media (max-width:480px) { .inventory-table { min-width:1030px; } }
 
 
   /* ---------- Toolbar ---------- */
@@ -1191,12 +1191,14 @@
       });
     });
     lots.sort(function(a,b){return eventTime(b.event)-eventTime(a.event);});
+    const avg=Object.create(null);
+    lots.forEach(function(l){const k=l.group.key;if(!avg[k])avg[k]={sh:0,amt:0,cur:l.event.currency};avg[k].sh+=l.remaining;avg[k].amt+=l.remaining*(Number(l.event.price)||0);});
     const seen=Object.create(null);
     const rows=lots.map(function(lot){
       const group=lot.group,event=lot.event,showSell=!seen[group.key];seen[group.key]=true;
-      return '<tr><td><div class="inventory-stock-cell"><strong class="mono">'+escapeHtml(group.ticker)+'</strong><span>'+escapeHtml(group.stockName)+'</span></div></td><td>'+formatDate(event.dateTime)+'</td><td class="num-cell">'+formatNum(event.fxRate,4)+'</td><td class="num-cell">'+formatTWD(lot.cost)+'</td><td class="num-cell">'+formatShares(lot.remaining)+' 股</td><td class="inventory-note">'+(event.notes?escapeHtml(event.notes):'--')+'</td><td><div class="inventory-actions"><button class="btn-link" data-action="edit-trade" data-trade-id="'+escapeHtml(event.id)+'">修改</button>'+(showSell?'<button class="btn-link" data-action="record-sale" data-group-key="'+encodeURIComponent(group.key)+'">記錄賣出</button>':'')+'</div></td></tr>';
+      return '<tr><td><div class="inventory-stock-cell"><strong class="mono">'+escapeHtml(group.ticker)+'</strong><span>'+escapeHtml(group.stockName)+'</span></div></td><td>'+formatDate(event.dateTime)+'</td><td class="num-cell">'+escapeHtml(event.currency)+' '+formatNum(event.price)+'</td><td class="num-cell">'+escapeHtml(avg[group.key].cur)+' '+formatNum(avg[group.key].amt/avg[group.key].sh)+'</td><td class="num-cell">'+formatNum(event.fxRate,4)+'</td><td class="num-cell">'+formatTWD(lot.cost)+'</td><td class="num-cell">'+formatShares(lot.remaining)+' 股</td><td class="inventory-note">'+(event.notes?escapeHtml(event.notes):'--')+'</td><td><div class="inventory-actions"><button class="btn-link" data-action="edit-trade" data-trade-id="'+escapeHtml(event.id)+'">修改</button>'+(showSell?'<button class="btn-link" data-action="record-sale" data-group-key="'+encodeURIComponent(group.key)+'">記錄賣出</button>':'')+'</div></td></tr>';
     }).join('');
-    return '<div class="inventory-table-wrap"><table class="inventory-table"><thead><tr><th>股票代號／名稱</th><th>買入日期</th><th class="num-cell">買入匯率</th><th class="num-cell">持有成本</th><th class="num-cell">持有股數</th><th>備註</th><th>操作</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    return '<div class="inventory-table-wrap"><table class="inventory-table"><thead><tr><th>股票代號／名稱</th><th>買入日期</th><th class="num-cell">買入股價</th><th class="num-cell">平均買入股價</th><th class="num-cell">買入匯率</th><th class="num-cell">持有成本</th><th class="num-cell">持有股數</th><th>備註</th><th>操作</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   }
 
   function renderPnlChart(groups) {
